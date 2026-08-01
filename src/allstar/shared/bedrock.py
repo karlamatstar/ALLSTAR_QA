@@ -53,7 +53,7 @@ def normalize_gpt_model(model: str) -> str:
 def normalize_mantle_model(model: str, provider: str) -> str:
     """Mantle 모델 ID가 이미 공급자 접두사를 가지면 그대로 사용한다."""
     value = model.strip()
-    return value if "." in value else f"{provider}.{value}"
+    return value if value.startswith(f"{provider}.") else f"{provider}.{value}"
 
 
 def normalize_claude_model(model: str) -> str:
