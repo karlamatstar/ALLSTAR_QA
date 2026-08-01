@@ -63,7 +63,9 @@ class PolicyImproverAgent:
         self.model = model
 
     # ============ 정책 개선안 생성 메서드 ============
-    async def improve(self, summary: str, execution=None) -> PolicyResult:
+    async def improve(
+        self, summary: str, execution=None, response_language: str = "ko"
+    ) -> PolicyResult:
         """
         요약을 기반으로 최초 정책 개선안을 생성합니다.
 
@@ -91,6 +93,11 @@ class PolicyImproverAgent:
         # 그대로 알려줘서 모델이 그 한도 안에서 스스로 문장을 끝맺도록 유도한다.
         # (원본 example 프롬프트는 길이 제한이 없어 문장 중간에 잘리는 문제가 있었다.)
         max_tokens = 1024
+        language_instruction = (
+            "Write the complete final policy recommendation in English."
+            if response_language == "en"
+            else "정책 개선안 전체를 한국어로 작성해라."
+        )
         prompt = f"""
 당신은 고객 VOC를 기반으로 정책 개선안을 제안하는 전문가입니다.
 
@@ -105,7 +112,8 @@ class PolicyImproverAgent:
 [요약]
 {summary}
 
-정책 개선안만 깔끔한 한국어 문장으로 출력해라. 요약 내용을 반드시 반영하여 구체적인 정책 개선안을 제시해라.
+{language_instruction}
+정책 개선안만 출력하고, 요약 내용을 반드시 반영하여 구체적인 정책 개선안을 제시해라.
 """
 
         # ============ LLM 래퍼를 통한 API 호출 ============
@@ -270,8 +278,11 @@ class ImproverServicer(voc_pb2_grpc.ImproverServicer):
         try:
             # ============ 정책 개선안 생성 ============
             # 에이전트의 improve 메서드를 호출하여 정책 개선안을 생성합니다
+            metadata = dict(context.invocation_metadata())
             result: PolicyResult = await self.imp.improve(
-                request.summary, execution=request.generation
+                request.summary,
+                execution=request.generation,
+                response_language=metadata.get("x-allstar-response-language", "ko"),
             )
 
             final_policy = result.policy

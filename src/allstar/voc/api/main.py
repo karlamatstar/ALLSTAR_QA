@@ -13,6 +13,11 @@ from dotenv import load_dotenv
 from fastapi import BackgroundTasks, FastAPI, HTTPException
 
 from allstar.shared.model_profiles import get_profile, missing_keys, public_profiles
+from allstar.shared.language import (
+    localized_language_guard_message,
+    primary_language,
+    response_language_matches,
+)
 from allstar.voc.api import judge, log_store
 from allstar.voc.api.metrics import (
     initialize_metric_series,
@@ -120,12 +125,21 @@ async def _execute(request_id: str, request: ChatRequest) -> None:
         answer = result.get("policy") or result.get("summary") or ""
         pipeline_elapsed = round(time.perf_counter() - started, 3)
         result_with_answer = {**result, "answer": answer}
+        if answer and not response_language_matches(request.question, answer):
+            result_with_answer["answer"] = localized_language_guard_message(request.question)
+            result_with_answer["language_guard"] = {
+                "matched": False,
+                "original_answer": answer,
+            }
         async with _jobs_lock:
             _jobs[request_id]["result"] = result_with_answer
 
         if result.get("outcome") == "no_data":
             user_message = (
-                "현재 등록된 VOC 데이터에서 관련 내용을 찾을 수 없습니다. "
+                "No related content was found in the registered VOC data. "
+                "Please ask again using terms related to insurance VOC issues, cause analysis, or improvements."
+                if primary_language(request.question) == "en"
+                else "현재 등록된 VOC 데이터에서 관련 내용을 찾을 수 없습니다. "
                 "보험 VOC의 불편 사항, 원인 분석 또는 개선 방안과 관련된 표현으로 다시 질문해 주세요."
             )
             result_with_answer["answer"] = user_message
@@ -202,6 +216,8 @@ async def _execute(request_id: str, request: ChatRequest) -> None:
     except Exception as error:
         elapsed = round(time.perf_counter() - started, 3)
         public_error = _public_chat_error(error)
+        if primary_language(request.question) == "en":
+            public_error = "The VOC request could not be completed. Please try again later."
         logger.exception("VOC 요청 처리 실패: request_id=%s", request_id)
         fail_active_stage(request_id, LIVE_CASE_ID, public_error)
         finish_progress(request_id, "failed", public_error)

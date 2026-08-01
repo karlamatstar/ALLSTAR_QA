@@ -2,7 +2,11 @@ import json
 
 import pandas as pd
 
-from allstar.ai_agent.evaluation.report_generator import _decision_stats, generate_all
+from allstar.ai_agent.evaluation.report_generator import (
+    _decision_stats,
+    decision_gap_explanation,
+    generate_all,
+)
 
 
 def test_na_is_separate_from_fail_and_excluded_from_rate_and_average():
@@ -86,3 +90,40 @@ def test_generate_all_creates_latest_and_history_quality_charts(tmp_path):
     assert "assets/case_score_comparison.png" in latest
     assert "assets/test_run/case_score_comparison.png" in history
     assert len(json.loads((tmp_path / "evaluation_result.json").read_text(encoding="utf-8"))) == 2
+
+
+def test_noncritical_rule_fail_overall_pass_gets_case_specific_explanation(tmp_path):
+    result = _result("TC-021", 4, 5)
+    api = result["api_based"]
+    api["rule_validation"] = {
+        "rule_status": "FAIL",
+        "rule_reason": "예상 핵심 키워드가 답변에 포함되지 않았습니다.",
+        "critical_failure": False,
+    }
+
+    explanation = decision_gap_explanation(api["rule_validation"], api["evaluation"])
+    assert "비차단 규칙" in explanation
+    assert "25/25점" in explanation
+    assert "PASS 기준(20점 이상)" in explanation
+
+    generate_all([result], tmp_path, "gap")
+    report = (tmp_path / "final_quality_report.md").read_text(encoding="utf-8")
+    csv = (tmp_path / "evaluation_result.csv").read_text(encoding="utf-8-sig")
+    assert "판정 차이 설명" in report
+    assert "decision_gap_explanation" in csv
+
+
+def test_critical_language_failure_cannot_remain_overall_pass(tmp_path):
+    result = _result("TC-LANG", 4, 5)
+    api = result["api_based"]
+    api["rule_validation"] = {
+        "rule_status": "FAIL",
+        "rule_reason": "한국어 질문에 영어로 답했습니다.",
+        "critical_failure": True,
+    }
+
+    generate_all([result], tmp_path, "critical")
+
+    saved = json.loads((tmp_path / "evaluation_result.json").read_text(encoding="utf-8"))
+    assert saved[0]["api_based"]["evaluation"]["overall_decision"] == "FAIL"
+    assert "필수 규칙 위반" in saved[0]["api_based"]["evaluation"]["summary"]

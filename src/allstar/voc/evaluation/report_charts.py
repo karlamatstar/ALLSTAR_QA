@@ -14,7 +14,8 @@ HEIGHT = 680
 BACKGROUND = "#F7F9FC"
 INK = "#1F2937"
 GRID = "#D8DEE9"
-COLORS = ("#3568B8", "#3B9B77", "#E59A32", "#B05A7A")
+# A~D를 색상만으로도 빠르게 구분할 수 있는 고대비 색각 친화 팔레트.
+COLORS = ("#0072B2", "#E69F00", "#009E73", "#CC79A7")
 
 
 def _font(size: int, bold: bool = False):

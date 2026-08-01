@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from allstar.shared.model_profiles import ModelSpec
+from allstar.shared.language import language_mismatch_reason, response_language_matches
 from allstar.voc.evaluation.judge_prompt import (
     build_judge_prompt,
     decide_verdict,
@@ -66,6 +67,16 @@ async def evaluate(
     parsed = parse_judge_response(text, rubric)
     if parsed is None:
         raise ValueError("Judge 응답에서 유효한 9항목 채점 JSON을 찾지 못했습니다.")
+    final_answer = result.get("answer", "") if isinstance(result, dict) else str(result)
+    language_guard_failed = bool(
+        isinstance(result, dict) and (result.get("language_guard") or {}).get("matched") is False
+    )
+    if language_guard_failed or not response_language_matches(question, final_answer):
+        parsed["immediate_hold"] = True
+        parsed["hold_reason"] = language_mismatch_reason(question)
+        parsed["rationale"] = (
+            f"{parsed['hold_reason']} 언어 일치는 최종 사용자 응답의 필수 조건이므로 즉시 보류합니다."
+        )
     verdict = decide_verdict(parsed["total"], parsed["immediate_hold"], rubric)
     return {
         "schema_version": 2,

@@ -18,6 +18,7 @@ import time
 from typing import Dict, Any, Optional, List
 # gRPC 라이브러리 (비동기 클라이언트/서버 통신)
 import grpc
+from allstar.shared.language import primary_language
 # Protocol Buffers로 생성된 메시지 및 서비스 정의
 from allstar.voc.protocol import voc_pb2, voc_pb2_grpc
 from allstar.voc.evaluation.progress import fail_active_stage, set_stage, skip_stages
@@ -213,6 +214,7 @@ class VOCGRPCRuntime:
             metadata = []
             if progress_run_id and progress_case_id:
                 metadata = [("x-allstar-run-id", progress_run_id), ("x-allstar-case-id", progress_case_id)]
+            metadata.append(("x-allstar-response-language", primary_language(question)))
 
             async def call_pipeline(filters: List[str]):
                 return await stub.RunPipeline(

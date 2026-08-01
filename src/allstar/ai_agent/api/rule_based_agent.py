@@ -2,9 +2,15 @@
 배치 품질 비교 평가와 실시간 /chat 비교 응답에서 API 기반 에이전트의 대조군으로 사용된다.
 외부 API를 호출하지 않으므로 지연/실패 없이 항상 즉시 응답한다."""
 from allstar.ai_agent.api.knowledge_base import COURSE_KNOWLEDGE
+from allstar.shared.language import primary_language
 
 
 def get_answer_from_rule_based_agent(user_question: str) -> str:
+    if primary_language(user_question) == "en":
+        return (
+            "I could not match your question to the Korean course guide with the local rules. "
+            "Please ask the course administrator for confirmation."
+        )
     # 띄어쓰기 방어: 모든 공백을 제거하여 단순 띄어쓰기 차이로 인한 미인식 방지
     question = user_question.strip().replace(" ", "")
 

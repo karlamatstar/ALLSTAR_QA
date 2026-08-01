@@ -221,6 +221,7 @@ edits를 반영하되, 원본 데이터에 없는 새로운 사실·통계·수�
         execution=None,
         progress_run_id: str = "",
         progress_case_id: str = "",
+        response_language: str = "ko",
     ) -> dict:
         """
         요약 생성 전체 파이프라인을 실행합니다.
@@ -364,6 +365,7 @@ edits를 반영하되, 원본 데이터에 없는 새로운 사실·통계·수�
                     generation=execution,
                 ),
                 timeout=timeout,
+                metadata=(("x-allstar-response-language", response_language),),
             )
         finish_stage(6, "Improver", stage_started)
         policy = pres.policy or ""
@@ -498,6 +500,7 @@ class SummarizerServicer(voc_pb2_grpc.SummarizerServicer):
         metadata = dict(context.invocation_metadata())
         progress_run_id = metadata.get("x-allstar-run-id", "")
         progress_case_id = metadata.get("x-allstar-case-id", "")
+        response_language = metadata.get("x-allstar-response-language", "ko")
         try:
             # ============ 파이프라인 실행 ============
             # 에이전트의 run_pipeline 메서드를 호출하여 전체 파이프라인을 실행합니다
@@ -510,6 +513,7 @@ class SummarizerServicer(voc_pb2_grpc.SummarizerServicer):
                 execution=request.generation,
                 progress_run_id=progress_run_id,
                 progress_case_id=progress_case_id,
+                response_language=response_language,
             )
             # ============ 응답 메시지 생성 및 반환 ============
             # 파이프라인 실행 결과를 gRPC 응답 메시지로 감싸서 반환합니다

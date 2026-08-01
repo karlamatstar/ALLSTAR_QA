@@ -15,6 +15,7 @@ from pathlib import Path
 
 from allstar.shared.model_profiles import public_profiles
 from allstar.shared.paths import VOC_LOG_ROOT
+from allstar.shared.language import language_mismatch_reason, response_language_matches
 from allstar.voc.evaluation.progress import (
     fail_active_stage,
     finish_case,
@@ -31,6 +32,15 @@ ACTIVE_REPORTS_DIR = REPORTS_DIR
 DEFAULT_REPORTS_DIR = REPORTS_DIR
 DEFAULT_JUDGE_LOG_DIR = VOC_LOG_ROOT / "testcase"
 JUDGE_LOG_DIR = DEFAULT_JUDGE_LOG_DIR
+
+
+def _final_answer_from_analysis(analysis: str) -> str:
+    """채점용 6단계 원문에서 사용자에게 노출되는 Improver 결과를 추출한다."""
+    marker = "[Improver 정책 개선안]\n"
+    if marker not in analysis:
+        return analysis
+    answer = analysis.split(marker, 1)[1]
+    return answer.split("\n\n[전체 응답시간]", 1)[0].strip()
 
 
 def configure_output_dir(path: str | None) -> None:
@@ -451,6 +461,13 @@ async def _run_judge(cases: list[dict], run_log: JudgeRunLog) -> int:
             finish_case(progress_run_id, cid, "failed")
             continue
 
+        final_answer = _final_answer_from_analysis(analysis)
+        if not response_language_matches(case["question"], final_answer):
+            result["immediate_hold"] = True
+            result["hold_reason"] = language_mismatch_reason(case["question"])
+            result["rationale"] = (
+                f"{result['hold_reason']} 언어 일치는 최종 사용자 응답의 필수 조건이므로 즉시 보류합니다."
+            )
         verdict = decide_verdict(result["total"], result["immediate_hold"], rubric)
         print(f"  총점 {result['total']}점 → {verdict}")
         rows.append({

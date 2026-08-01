@@ -78,6 +78,12 @@ def evaluate_answer(tc: dict, answer: str, agent_label: str) -> dict:
     except Exception as error:
         evaluation = create_error_evaluation(error, "평가 API 호출")
 
+    if rule_validation.get("critical_failure") and evaluation.get("overall_decision") != "N/A":
+        evaluation["overall_decision"] = "FAIL"
+        evaluation["summary"] = (
+            f"{rule_validation['rule_reason']} 언어 일치는 필수 규칙이므로 다른 품질 점수와 관계없이 FAIL입니다."
+        )
+
     return {"answer": answer, "rule_validation": rule_validation, "evaluation": evaluation}
 
 

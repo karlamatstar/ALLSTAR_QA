@@ -27,6 +27,38 @@ def get_rule_status(rule_validation: dict) -> str:
     return "CHECK"
 
 
+def decision_gap_explanation(rule_validation: dict, evaluation: dict) -> str:
+    """규칙 점검과 독립 품질평가의 판정이 다른 경우를 사례별 근거로 설명한다."""
+    if get_rule_status(rule_validation) != "FAIL" or evaluation.get("overall_decision") != "PASS":
+        return ""
+    rule_reason = str(rule_validation.get("rule_reason") or "규칙 조건을 충족하지 못했습니다.")
+    if rule_validation.get("critical_failure"):
+        return (
+            f"{rule_reason} 언어 일치·안전성 같은 필수 규칙 위반은 종합 PASS를 유지할 수 없으므로 "
+            "현재 결과는 재검토 또는 FAIL 처리 대상입니다."
+        )
+    total = evaluation.get("total_score", 0)
+    return (
+        f"{rule_reason} 다만 이 규칙은 특정 핵심어의 문구 일치를 확인하는 비차단 규칙이며, "
+        f"독립 품질평가가 {total}/25점으로 PASS 기준(20점 이상)을 충족하여 종합 판정은 PASS입니다."
+    )
+
+
+def _enforce_critical_failures(results: list) -> None:
+    """과거 결과를 다시 보고서로 만들 때도 필수 규칙 위반 PASS를 남기지 않는다."""
+    for result in results:
+        for model_type in MODEL_TYPES:
+            model_result = result[model_type]
+            rule_validation = model_result.get("rule_validation", {})
+            evaluation = model_result.get("evaluation", {})
+            if rule_validation.get("critical_failure") and evaluation.get("overall_decision") == "PASS":
+                evaluation["overall_decision"] = "FAIL"
+                evaluation["summary"] = (
+                    f"{rule_validation.get('rule_reason', '필수 규칙 위반')} "
+                    "필수 규칙 위반으로 종합 판정을 FAIL로 보정했습니다."
+                )
+
+
 def _results_to_rows(results: list) -> list:
     """비교 결과를 CSV/요약 통계 공용의 평평한(flat) 행으로 변환한다 (케이스 × 모델 2종 = 행 2개)."""
     rows = []
@@ -50,6 +82,9 @@ def _results_to_rows(results: list) -> list:
                 "total_score":            evaluation.get("total_score", 0),
                 "overall_decision":       evaluation["overall_decision"],
                 "summary":                evaluation["summary"],
+                "decision_gap_explanation": decision_gap_explanation(
+                    model_result["rule_validation"], evaluation
+                ),
             })
     return rows
 
@@ -188,6 +223,10 @@ def save_markdown_report(results: list, file_path: Path, chart_paths: dict[str, 
             f"- 점수: {score_line(rb_ev)}",
             f"- 종합 판정: {decision_badge(rb_ev['overall_decision'])}",
             f"- 평가 의견: {rb_ev['summary']}",
+            *(
+                [f"- 판정 차이 설명: {decision_gap_explanation(result['rule_based']['rule_validation'], rb_ev)}"]
+                if decision_gap_explanation(result['rule_based']['rule_validation'], rb_ev) else []
+            ),
             "",
             "#### API 기반 챗봇",
             f"- 답변: {result['api_based']['answer']}",
@@ -195,6 +234,10 @@ def save_markdown_report(results: list, file_path: Path, chart_paths: dict[str, 
             f"- 점수: {score_line(ab_ev)}",
             f"- 종합 판정: {decision_badge(ab_ev['overall_decision'])}",
             f"- 평가 의견: {ab_ev['summary']}",
+            *(
+                [f"- 판정 차이 설명: {decision_gap_explanation(result['api_based']['rule_validation'], ab_ev)}"]
+                if decision_gap_explanation(result['api_based']['rule_validation'], ab_ev) else []
+            ),
             "",
         ]
     lines += ["## 4. 케이스별 상세 비교", ""]
@@ -273,6 +316,7 @@ def save_markdown_report(results: list, file_path: Path, chart_paths: dict[str, 
 
 def generate_all(results: list, reports_dir: Path, timestamp: str) -> None:
     """타임스탬프가 붙은 이력본은 reports_dir/history/에, 날짜 없는 최신본은 reports_dir 바로 아래에 저장한다."""
+    _enforce_critical_failures(results)
     history_dir = reports_dir / "history"
     history_dir.mkdir(parents=True, exist_ok=True)
 

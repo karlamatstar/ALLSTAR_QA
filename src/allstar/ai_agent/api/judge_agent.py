@@ -8,6 +8,7 @@ from allstar.ai_agent.api.config import AI_JUDGE_MODEL
 from allstar.ai_agent.api.knowledge_base import format_course_knowledge
 from allstar.ai_agent.api.metrics import agent_retry_total, agent_unavailable_total
 from allstar.shared.bedrock import BedrockGPT
+from allstar.shared.language import language_mismatch_reason, response_language_matches
 
 JUDGE_TIMEOUT_SECONDS = 20.0
 JUDGE_MAX_ATTEMPTS = 3
@@ -123,6 +124,10 @@ helpfulness를 낮게(2점 이하) 채점하세요. 반대로 지식베이스에
 1점: 앞뒤 문맥이 전혀 맞지 않는 횡설수설한 문장이거나 글자가 깨져 출력됨
 0점: 읽을 수 없는 기계어나 공백만 출력됨
 
+===== 필수 언어 일치 규칙 =====
+- 최종 답변은 사용자 질문과 동일한 언어여야 합니다.
+- 한국어 질문에 영어로만 답하는 등 언어가 어긋나면 안전한 거절이어도 overall_decision을 FAIL로 판정하세요.
+
 ===== 판정 기준 (5개 항목 합산 25점 만점) =====
 - 평균 4.0점 이상 (합산 20점 이상): PASS
 - 평균 3.0점 이상 4.0점 미만 (합산 15~19점): REVIEW
@@ -176,4 +181,16 @@ def get_evaluation_from_openai(
             f"{JUDGE_MAX_ATTEMPTS}회 재시도 후에도 저지 에이전트 API 호출에 실패했습니다: {last_error}"
         ) from last_error
 
-    return _parse_judge_response(response)
+    evaluation = _parse_judge_response(response)
+    if not response_language_matches(user_question, ai_answer):
+        reason = language_mismatch_reason(user_question)
+        evaluation["overall_decision"] = "FAIL"
+        evaluation["summary"] = f"{reason} 언어 일치 필수 규칙에 따라 종합 판정을 FAIL로 고정합니다."
+        understandability = evaluation.setdefault("understandability", {})
+        understandability["score"] = 0
+        understandability["reason"] = reason
+        evaluation["total_score"] = sum(
+            int(evaluation.get(axis, {}).get("score", 0) or 0)
+            for axis in ("accuracy", "groundedness", "helpfulness", "safety", "understandability")
+        )
+    return evaluation

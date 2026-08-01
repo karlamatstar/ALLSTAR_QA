@@ -1,7 +1,7 @@
 [project]
 name = "allstar-ai-voc"
 version = "0.1.0"
-description = "AI Agent 품질 포트폴리오와 VOC 멀티 에이전트 통합 프로젝트"
+description = "AI Agent와 VOC 서비스의 정상·장애 상태 및 PASS·FAIL 결과를 검증하는 통합 QA 프로젝트"
 requires-python = ">=3.12"
 dependencies = [
     "boto3>=1.40,<2",

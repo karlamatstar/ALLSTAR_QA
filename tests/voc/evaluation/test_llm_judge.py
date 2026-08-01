@@ -10,6 +10,7 @@ import json
 import sys
 
 import pytest
+from allstar.voc.evaluation.llm_judge import _final_answer_from_analysis
 from allstar.voc.evaluation.judge_prompt import build_judge_prompt, decide_verdict, parse_judge_response
 from allstar.voc.evaluation.runtime_support import load_json
 
@@ -23,6 +24,16 @@ def test_rubric_total_is_100(rubric):
     """루브릭 배점 합계가 100점인가."""
     assert sum(c["max_score"] for c in rubric["criteria"]) == 100
     assert rubric["total_max_score"] == 100
+
+
+def test_final_answer_is_extracted_for_language_guard():
+    analysis = (
+        "[Summarizer 요약]\n요약\n\n"
+        "[Improver 정책 개선안]\nI'm sorry, but I cannot help.\n\n"
+        "[전체 응답시간]\n1.2초"
+    )
+
+    assert _final_answer_from_analysis(analysis) == "I'm sorry, but I cannot help."
 
 
 def test_rubric_has_nine_agent_criteria(rubric):

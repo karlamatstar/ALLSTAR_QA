@@ -107,6 +107,16 @@ LOCAL_TIMEZONE = datetime.now().astimezone().tzinfo
 LOCAL_TIME_FORMAT = "%Y/%m/%d - %H:%M:%S"
 
 DECISION_COLORS = {"PASS": "#188a4c", "REVIEW": "#c07a12", "FAIL": "#c0392b", "N/A": "#6b7280", "미채점": "#6b7280"}
+MODEL_CHART_STYLES = {
+    "서버 연결 방식(API)": {"color": "#0072B2", "dash": "solid", "symbol": "circle"},
+    "규칙 기반": {"color": "#E69F00", "dash": "dash", "symbol": "square"},
+}
+VOC_PROFILE_CHART_STYLES = {
+    "A": {"color": "#0072B2", "fill": "rgba(0,114,178,0.12)", "dash": "solid", "symbol": "circle"},
+    "B": {"color": "#E69F00", "fill": "rgba(230,159,0,0.12)", "dash": "dash", "symbol": "square"},
+    "C": {"color": "#009E73", "fill": "rgba(0,158,115,0.12)", "dash": "dot", "symbol": "diamond"},
+    "D": {"color": "#CC79A7", "fill": "rgba(204,121,167,0.12)", "dash": "dashdot", "symbol": "x"},
+}
 SCORE_COLUMNS = ["accuracy_score", "groundedness_score", "helpfulness_score", "safety_score", "understandability_score"]
 SCORE_LABELS = {
     "accuracy_score": "정확성",
@@ -1418,10 +1428,14 @@ def _render_voc_breakdown(frame: pd.DataFrame) -> None:
             normalized.append((mean / maximum * 100) if mean is not None else None)
             table_rows[index][f"프로필 {profile_id}"] = f"{mean:.1f}/{maximum}" if mean is not None else "데이터 없음"
         if any(value is not None for value in normalized):
+            style = VOC_PROFILE_CHART_STYLES[profile_id]
             figure.add_trace(go.Scatterpolar(
                 r=[value or 0 for value in normalized] + [normalized[0] or 0],
                 theta=categories + [categories[0]],
                 fill="toself",
+                fillcolor=style["fill"],
+                line={"color": style["color"], "dash": style["dash"], "width": 3},
+                marker={"color": style["color"], "symbol": style["symbol"], "size": 8},
                 name=f"프로필 {profile_id}",
             ))
     figure.update_layout(
@@ -2338,8 +2352,17 @@ def _render_score_breakdown(
         line_close=True,
         range_r=[0, 5],
         markers=True,
+        color_discrete_map={label: style["color"] for label, style in MODEL_CHART_STYLES.items()},
     )
-    figure.update_traces(fill="toself", opacity=.72)
+    for trace in figure.data:
+        style = MODEL_CHART_STYLES.get(trace.name, MODEL_CHART_STYLES["서버 연결 방식(API)"])
+        trace.update(
+            fill="toself",
+            fillcolor=("rgba(0,114,178,0.12)" if trace.name == "서버 연결 방식(API)" else "rgba(230,159,0,0.12)"),
+            line={"color": style["color"], "dash": style["dash"], "width": 3},
+            marker={"color": style["color"], "symbol": style["symbol"], "size": 8},
+            opacity=1,
+        )
     figure.update_layout(margin=dict(t=45, b=35, l=35, r=35), legend_title_text="답변 종류")
 
     model_labels = average_labels.index.tolist()
@@ -3016,7 +3039,7 @@ def _render_voc_real_test(cases: list[dict]) -> None:
                 f"독립 평가: {judge['provider']} / {judge['model']} / {reasoning_text(judge['reasoning'])}</div></div></div>",
                 unsafe_allow_html=True,
             )
-            disabled = running or (not completed_pending and (not password_confirmed or not cases))
+            disabled = running or completed_pending or not password_confirmed or not cases
             clicked = st.button(
                 f"{profile['profile_id']} 전체 테스트 실행",
                 key=f"run_profile_{profile['profile_id']}",
@@ -3024,11 +3047,7 @@ def _render_voc_real_test(cases: list[dict]) -> None:
                 disabled=disabled,
                 width="stretch",
             )
-            if clicked and completed_pending:
-                st.session_state.voc_profile_notice = (
-                    f"프로필 {active_profile} 완료 상태를 먼저 닫은 뒤 프로필 {profile['profile_id']} 테스트를 실행해 주세요."
-                )
-            elif clicked:
+            if clicked:
                 run_id = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
                 _launch_process(
                     "voc_profile_process",

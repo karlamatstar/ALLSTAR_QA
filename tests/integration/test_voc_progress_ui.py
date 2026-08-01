@@ -77,7 +77,8 @@ def test_dashboard_uses_partial_refresh_utf8_and_completion_guard():
     assert 'env["PYTHONIOENCODING"] = "utf-8"' in VIEWS
     assert 'raw.decode("cp949", errors="replace")' in VIEWS
     assert "profile-running" in VIEWS and "profile-completed" in VIEWS
-    assert "완료 상태를 먼저 닫은 뒤" in VIEWS
+    assert "disabled = running or completed_pending or not password_confirmed or not cases" in VIEWS
+    assert "완료 상태 닫기 · 다음 테스트 준비" in VIEWS
     assert "테스트케이스 평균" in VIEWS
     assert "interactive=False" in VIEWS
     assert VIEWS.index("단계별 결과를 볼 테스트케이스") < VIEWS.rindex("실행 내용 보기")

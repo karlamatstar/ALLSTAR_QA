@@ -27,6 +27,7 @@ from allstar.ai_agent.api.metrics import (
     restore_service_failure_metrics_from_log,
 )
 from allstar.ai_agent.api.rule_based_agent import get_answer_from_rule_based_agent
+from allstar.shared.language import localized_service_error_message
 from allstar.ai_agent.api.schemas import ChatRequest, ChatResponse, FaultChatRequest, HealthResponse
 from allstar.ai_agent.api.service_agent import API_AGENT_MAX_ATTEMPTS, ApiAgentUnavailableError, get_answer_from_api_agent
 from allstar.ai_agent.evaluation.live_faults import record_chat_fault
@@ -288,7 +289,7 @@ def chat(request: ChatRequest, background_tasks: BackgroundTasks) -> ChatRespons
         answer = get_answer_from_api_agent(request.question)
     except ApiAgentUnavailableError as error:
         logger.error(f"API 끊김 장애 발생: {error}")
-        answer = "현재 API 서버 점검 중이거나 일시적인 통신 장애가 발생했습니다. 잠시 후 다시 시도해 주세요. (503 Service Unavailable)"
+        answer = localized_service_error_message(request.question)
         is_api_error = True
 
     # 규칙 기반 답변은 로컬 키워드 매칭이라 실패/지연 없이 즉시 생성된다 (비교용)

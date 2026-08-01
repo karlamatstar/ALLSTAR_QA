@@ -13,7 +13,8 @@ BACKGROUND = "#F7F9FC"
 INK = "#1F2937"
 MUTED = "#657084"
 GRID = "#D8DEE9"
-MODEL_COLORS = ("#7C5CC4", "#3568B8")
+# 색각 이상 환경에서도 구분되는 파랑·주황 조합. 같은 계열의 명도 차이만 쓰지 않는다.
+MODEL_COLORS = ("#0072B2", "#E69F00")
 DECISION_ORDER = ("PASS", "REVIEW", "FAIL", "N/A", "미채점")
 AXIS_ORDER = (
     ("accuracy_score", "정확성"),
