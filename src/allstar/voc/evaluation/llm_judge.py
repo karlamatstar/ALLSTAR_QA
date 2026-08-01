@@ -161,16 +161,15 @@ class JudgeLLM:
 
 def make_judge_llm():
     """Bedrock에서 사용할 평가 제공자를 설정 순서대로 구성한다."""
-    preferred = os.environ.get("JUDGE_PROVIDER", "anthropic").lower()
-    if preferred not in {"anthropic", "openai"}:
-        preferred = "anthropic"
+    preferred = os.environ.get("JUDGE_PROVIDER", "deepseek").lower()
+    if preferred not in {"anthropic", "openai", "deepseek"}:
+        preferred = "deepseek"
 
     providers = []
 
     locked = os.environ.get("JUDGE_LOCK_PROVIDER") == "1"
-    order = [preferred] if locked else [
-        preferred, "openai" if preferred == "anthropic" else "anthropic"
-    ]
+    fallback = "openai" if preferred in {"anthropic", "deepseek"} else "deepseek"
+    order = [preferred] if locked else [preferred, fallback]
     for provider in order:
         if provider == "anthropic":
             from allstar.voc.llm.anthropic_chat import AnthropicChat
@@ -209,6 +208,24 @@ def make_judge_llm():
                 provider,
                 model,
                 OpenAIChat(
+                    model=model,
+                    max_attempts=int(os.environ.get("LLM_MAX_ATTEMPTS", "3")),
+                ),
+            ))
+        elif provider == "deepseek":
+            from allstar.voc.llm.deepseek_chat import DeepSeekChat
+            default_model = os.environ.get("DEEPSEEK_MODEL", "deepseek.v3.2")
+            model = (
+                os.environ.get("JUDGE_DEEPSEEK_MODEL", default_model)
+                if locked
+                else os.environ.get("JUDGE_MODEL", default_model)
+                if provider == preferred
+                else default_model
+            )
+            providers.append((
+                provider,
+                model,
+                DeepSeekChat(
                     model=model,
                     max_attempts=int(os.environ.get("LLM_MAX_ATTEMPTS", "3")),
                 ),
@@ -316,6 +333,8 @@ async def _run_judge(cases: list[dict], run_log: JudgeRunLog) -> int:
     generation_model = (
         os.environ.get("OPENAI_MODEL", "openai.gpt-oss-20b")
         if generation_provider == "openai"
+        else os.environ.get("DEEPSEEK_MODEL", "deepseek.v3.1")
+        if generation_provider == "deepseek"
         else os.environ.get("A2A_MODEL_POLICY", "global.anthropic.claude-sonnet-5")
         if generation_provider == "anthropic"
         else ""

@@ -5,8 +5,8 @@ def test_abcd_profiles_have_separate_generation_and_judge_roles():
     values = profiles()
     assert list(values) == ["A", "B", "C", "D"]
     assert values["A"].generation.provider == "openai"
-    assert values["A"].judge.provider == "anthropic"
-    assert values["B"].generation.provider == "anthropic"
+    assert values["A"].judge.provider == "deepseek"
+    assert values["B"].generation.provider == "deepseek"
     assert values["B"].judge.provider == "openai"
     assert values["C"].generation.model != values["C"].judge.model
     assert values["D"].generation.model != values["D"].judge.model

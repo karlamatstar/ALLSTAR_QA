@@ -27,10 +27,10 @@ AGENT_MODULES = (
     "interpreter", "retriever", "summarizer", "evaluator", "critic", "improver"
 )
 EXPERIMENTS = {
-    "A": {"generation": "openai", "judge": "anthropic", "purpose": "기본 교차 품질검증"},
-    "B": {"generation": "anthropic", "judge": "openai", "purpose": "모델 역할 변경 검증"},
+    "A": {"generation": "openai", "judge": "deepseek", "purpose": "기본 교차 품질검증"},
+    "B": {"generation": "deepseek", "judge": "openai", "purpose": "모델 역할 변경 검증"},
     "C": {"generation": "openai", "judge": "openai", "purpose": "OpenAI 동일 모델 평가 비교"},
-    "D": {"generation": "anthropic", "judge": "anthropic", "purpose": "Anthropic 동일 모델 평가 비교"},
+    "D": {"generation": "deepseek", "judge": "deepseek", "purpose": "DeepSeek 동일 모델 평가 비교"},
 }
 CRITERIA_NAMES = (
     "Interpreter 해석 정확성",

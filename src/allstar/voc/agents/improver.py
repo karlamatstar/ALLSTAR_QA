@@ -21,7 +21,7 @@ import grpc
 from allstar.voc.protocol import voc_pb2, voc_pb2_grpc
 
 # ============ 프로젝트 내부 모듈 임포트 ============
-# Anthropic Chat API를 사용하기 위한 래퍼 클래스
+# 실행 프로필에 맞는 Bedrock 모델을 선택하기 위한 팩토리
 from allstar.voc.llm.generation_factory import make_generation_chat
 # JSON 파싱 유틸리티 함수
 from allstar.voc.runtime.json_utils import safe_json_loads
@@ -57,14 +57,9 @@ class PolicyImproverAgent:
         PolicyImproverAgent 인스턴스를 초기화합니다.
 
         Args:
-            model: 사용할 Anthropic 모델명 (None이면 환경변수 또는 기본값 사용)
+            model: 사용할 생성 모델명 (None이면 환경변수 또는 기본값 사용)
 
-        Raises:
-            RuntimeError: Anthropic 클라이언트가 설정되지 않았을 때
         """
-        # ============ LLM 래퍼 인스턴스 생성 ============
-        # Anthropic Chat 래퍼를 인스턴스 변수로 생성합니다
-        # 반드시 인스턴스 생성!! (클래스 변수가 아닌 인스턴스 변수)
         self.model = model
 
     # ============ 정책 개선안 생성 메서드 ============
@@ -114,9 +109,9 @@ class PolicyImproverAgent:
 """
 
         # ============ LLM 래퍼를 통한 API 호출 ============
-        # Anthropic Chat 래퍼를 사용하여 정책 개선안을 생성합니다
+        # 실행 프로필의 생성 모델로 정책 개선안을 생성합니다
         text = await make_generation_chat(
-            "anthropic", model=self.model, execution=execution
+            "deepseek", model=self.model, execution=execution
         )(prompt.strip(), max_tokens=max_tokens)
 
         # ============ 결과 검증 ============
@@ -181,9 +176,9 @@ class PolicyImproverAgent:
 """
 
         # ============ LLM 래퍼를 통한 API 호출 ============
-        # Anthropic Chat 래퍼를 사용하여 정책 개선안을 개선합니다
+        # 실행 프로필의 생성 모델로 정책 개선안을 개선합니다
         text = await make_generation_chat(
-            "anthropic", model=self.model, execution=execution
+            "deepseek", model=self.model, execution=execution
         )(prompt.strip(), max_tokens=1024)
 
         # ============ 결과 검증 ============

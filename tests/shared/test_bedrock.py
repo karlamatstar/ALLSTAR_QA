@@ -55,6 +55,36 @@ def test_gpt_5_models_use_their_dedicated_openai_path():
     assert client.endpoint == "https://bedrock-mantle.us-west-2.api.aws/openai/v1/responses"
 
 
+def test_deepseek_uses_signed_chat_completions_endpoint(monkeypatch):
+    captured = {}
+
+    class FakeResponse:
+        @staticmethod
+        def raise_for_status():
+            return None
+
+        @staticmethod
+        def json():
+            return {"choices": [{"message": {"content": "평가"}}]}
+
+    def fake_post(url, *, content, headers, timeout):
+        captured.update(url=url, content=content, headers=headers, timeout=timeout)
+        return FakeResponse()
+
+    monkeypatch.setattr(bedrock, "_signed_headers", lambda *_args: {"Authorization": "signed"})
+    monkeypatch.setattr(bedrock.httpx, "post", fake_post)
+
+    result = bedrock.BedrockChatCompletions(
+        "v3.2", provider="deepseek", region="us-west-2"
+    ).generate("채점", max_tokens=321)
+
+    payload = json.loads(captured["content"])
+    assert captured["url"] == "https://bedrock-mantle.us-west-2.api.aws/v1/chat/completions"
+    assert payload["model"] == "deepseek.v3.2"
+    assert payload["max_completion_tokens"] == 321
+    assert result == "평가"
+
+
 def test_claude_uses_seoul_runtime_and_global_model(monkeypatch):
     captured = {}
 

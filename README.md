@@ -123,12 +123,12 @@ VOC 테스트케이스 보고서는 `교차 테스트 (A)`부터 `교차 테스�
 
 | 프로필 | 답변 생성 | 독립 품질평가(Judge) | 목적 |
 |---|---|---|---|
-| A | OpenAI `gpt-5.6-luna` · 추론 끔(none) | Anthropic `claude-sonnet-5` · 낮음(low) | 기본 권장 교차 평가 |
-| B | Anthropic `claude-sonnet-4-6` · 낮음(low) | OpenAI `gpt-5.6-terra` · 낮음(low) | 역방향 교차 평가 |
-| C | OpenAI `gpt-5.6-luna` · 추론 끔(none) | OpenAI `gpt-5.6-terra` · 낮음(low) | OpenAI 계열 역할 분리 |
-| D | Anthropic `claude-sonnet-4-6` · 낮음(low) | Anthropic `claude-sonnet-5` · 낮음(low) | Anthropic 계열 역할 분리 |
+| A | OpenAI `gpt-oss-20b` | DeepSeek `v3.2` | 기본 권장 교차 평가 |
+| B | DeepSeek `v3.1` | OpenAI `gpt-oss-120b` | 역방향 교차 평가 |
+| C | OpenAI `gpt-oss-20b` | OpenAI `gpt-oss-120b` | OpenAI 계열 역할 분리 |
+| D | DeepSeek `v3.1` | DeepSeek `v3.2` | DeepSeek 계열 역할 분리 |
 
-모든 모델은 Amazon Bedrock을 통해 호출한다. GPT는 오리건 리전의 Bedrock Mantle, Claude는 서울 리전의 Bedrock Runtime과 글로벌 추론 프로필을 사용한다. 선택 프로필, 생성 모델, Judge 모델과 추론 설정은 질문·채점 로그와 보고서에 함께 기록한다. Judge를 사용할 수 없으면 답변 실패와 구분해 `N/A`로 남긴다.
+모든 모델은 오리건 리전의 Amazon Bedrock Mantle을 통해 호출한다. OpenAI 모델은 Responses API, DeepSeek 모델은 Chat Completions API를 사용한다. 선택 프로필, 생성 모델, Judge 모델과 설정은 질문·채점 로그와 보고서에 함께 기록한다. Judge를 사용할 수 없으면 답변 실패와 구분해 `N/A`로 남긴다.
 
 ## 실행 전 준비
 
@@ -140,7 +140,7 @@ python -m venv .venv
 Copy-Item .env.example .env
 ```
 
-로컬은 AWS 프로필, EC2는 IAM 역할을 사용한다. OpenAI·Anthropic 장기 API 키는 저장하지 않으며 `.env`에는 리전·모델과 로컬 서비스 설정만 둔다. 비밀값이 들어 있는 `.env`는 Git에 포함하지 않는다.
+로컬은 AWS 프로필, EC2는 IAM 역할을 사용한다. 외부 AI 서비스의 장기 API 키는 저장하지 않으며 `.env`에는 리전·모델과 로컬 서비스 설정만 둔다. 비밀값이 들어 있는 `.env`는 Git에 포함하지 않는다.
 
 일반 챗봇 답변은 gpt-oss-20b, 챗봇 독립 채점은 gpt-oss-120b를 사용한다. `API 종합 성능 테스트`의 실제 `/chat` 응답시간 측정도 같은 gpt-oss-20b 호출 경로를 통과한다. 대량 부하·스트레스·스파이크 시험은 토큰 비용과 모델 쿼터가 서버 부하 측정을 왜곡하지 않도록 `/chat_mock`을 유지한다.
 

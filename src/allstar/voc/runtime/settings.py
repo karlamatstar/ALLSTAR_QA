@@ -16,6 +16,6 @@ MODEL_SUMMARY = os.environ.get(
 )
 MODEL_POLICY = os.environ.get(
     "A2A_MODEL_POLICY",
-    "global.anthropic.claude-sonnet-5",
+    "deepseek.v3.1",
 )
 DEFAULT_CSV = os.environ.get("A2A_VOC_CSV", str(VOC_DATA_ROOT / "voc.csv"))

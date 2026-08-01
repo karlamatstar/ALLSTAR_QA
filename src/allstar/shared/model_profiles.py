@@ -39,17 +39,15 @@ def _models() -> dict[str, ModelSpec]:
             os.getenv("VOC_OPENAI_JUDGE_MODEL", "openai.gpt-oss-120b"),
             os.getenv("VOC_OPENAI_JUDGE_REASONING", "low"),
         ),
-        "anthropic_generation": ModelSpec(
-            "anthropic",
-            os.getenv("VOC_ANTHROPIC_GENERATION_MODEL", "global.anthropic.claude-sonnet-4-6"),
-            os.getenv("VOC_ANTHROPIC_GENERATION_EFFORT", "low"),
-            os.getenv("VOC_ANTHROPIC_THINKING", "disabled"),
+        "deepseek_generation": ModelSpec(
+            "deepseek",
+            os.getenv("VOC_DEEPSEEK_GENERATION_MODEL", "deepseek.v3.1"),
+            "none",
         ),
-        "anthropic_judge": ModelSpec(
-            "anthropic",
-            os.getenv("VOC_ANTHROPIC_JUDGE_MODEL", "global.anthropic.claude-sonnet-5"),
-            os.getenv("VOC_ANTHROPIC_JUDGE_EFFORT", "low"),
-            os.getenv("VOC_ANTHROPIC_THINKING", "disabled"),
+        "deepseek_judge": ModelSpec(
+            "deepseek",
+            os.getenv("VOC_DEEPSEEK_JUDGE_MODEL", "deepseek.v3.2"),
+            "none",
         ),
     }
 
@@ -58,20 +56,20 @@ def profiles() -> dict[str, ModelProfile]:
     model = _models()
     return {
         "A": ModelProfile(
-            "A", "기본 권장", "OpenAI가 답변을 만들고 Anthropic이 독립 평가",
-            model["openai_generation"], model["anthropic_judge"], True,
+            "A", "기본 권장", "OpenAI가 답변을 만들고 DeepSeek이 독립 평가",
+            model["openai_generation"], model["deepseek_judge"], True,
         ),
         "B": ModelProfile(
-            "B", "역방향 교차 평가", "Anthropic이 답변을 만들고 OpenAI가 독립 평가",
-            model["anthropic_generation"], model["openai_judge"],
+            "B", "역방향 교차 평가", "DeepSeek이 답변을 만들고 OpenAI가 독립 평가",
+            model["deepseek_generation"], model["openai_judge"],
         ),
         "C": ModelProfile(
             "C", "OpenAI 계열 비교", "OpenAI 안에서 생성 모델과 평가 모델을 분리",
             model["openai_generation"], model["openai_judge"],
         ),
         "D": ModelProfile(
-            "D", "Anthropic 계열 비교", "Anthropic 안에서 생성 모델과 평가 모델을 분리",
-            model["anthropic_generation"], model["anthropic_judge"],
+            "D", "DeepSeek 계열 비교", "DeepSeek 안에서 생성 모델과 평가 모델을 분리",
+            model["deepseek_generation"], model["deepseek_judge"],
         ),
     }
 
