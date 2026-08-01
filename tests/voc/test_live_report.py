@@ -66,7 +66,7 @@ def test_live_report_starts_with_profile_guide_and_records_question_profile(tmp_
     assert "A~D 모델과 9항목·100점 기준 열기" not in content
     assert "9항목·100점" in content
     assert "프로필: **C · OpenAI 계열 비교**" in content
-    assert "gpt-5.6-luna" in content
+    assert "gpt-oss-20b" in content
     assert "13/15" in content
     assert "정상 100점 채점: **2건**" in content
     assert "90점 미만·N/A·실패 상세 목록 열기 (1건)" in content
