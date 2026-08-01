@@ -37,7 +37,7 @@ def test_gpt_uses_signed_mantle_responses_endpoint(monkeypatch):
     )
 
     payload = json.loads(captured["content"])
-    assert captured["url"] == "https://bedrock-mantle.us-west-2.api.aws/v1/responses"
+    assert captured["url"] == "https://bedrock-mantle.us-west-2.api.aws/openai/v1/responses"
     assert captured["headers"]["Authorization"] == "signed"
     assert payload["model"] == "openai.gpt-5.6-luna"
     assert payload["store"] is False

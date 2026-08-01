@@ -112,7 +112,7 @@ class BedrockGPT:
 
     @property
     def endpoint(self) -> str:
-        return f"https://bedrock-mantle.{self.region}.api.aws/v1/responses"
+        return f"https://bedrock-mantle.{self.region}.api.aws/openai/v1/responses"
 
     def _payload(
         self,
