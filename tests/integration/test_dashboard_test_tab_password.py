@@ -41,9 +41,27 @@ def test_three_top_test_tabs_are_visible_and_protect_actual_execution():
     assert "def _required_execution_password" in VIEWS
     assert 'type="password"' in VIEWS
     assert "matches_test_tab_password(password)" in VIEWS
+    assert 'with st.form(f"execution_password_form_{safe_key}"):' in VIEWS
+    assert 'st.columns([4, 1], gap="small", vertical_alignment="bottom")' in VIEWS
+    assert 'submit_column.form_submit_button(' in VIEWS
+    assert '"확인",' in VIEWS
+    assert "if submitted:" in VIEWS
+    assert "execution_password_verified_{safe_key}" in VIEWS
+    assert "execution_password_error_{safe_key}" in VIEWS
+    assert "비밀번호를 입력한 뒤 확인 버튼을 누르거나 Enter 키를 누르면 적용됩니다." in VIEWS
     for key in ("k6_api_performance", "ai_testcases", "voc_testcases"):
         assert f'"{key}"' in VIEWS
     assert VIEWS.count("실행 비밀번호 입력이 필요함을 이해했습니다.") == 3
+
+
+def test_unchecking_required_confirmation_clears_password_and_verification_state():
+    section = VIEWS[VIEWS.index("def _required_execution_password"):VIEWS.index("def _render_dataframe")]
+
+    assert "if not confirmed:" in section
+    assert "st.session_state.pop(input_key, None)" in section
+    assert "st.session_state.pop(verified_key, None)" in section
+    assert "st.session_state.pop(error_key, None)" in section
+    assert section.index("if not confirmed:") < section.index("with st.form")
 
 
 def test_docker_streamlit_receives_the_configurable_demo_password():
@@ -53,12 +71,16 @@ def test_docker_streamlit_receives_the_configurable_demo_password():
     assert "DASHBOARD_TEST_TABS_PASSWORD=1234" in ENV_EXAMPLE
 
 
-def test_ai_chat_fault_buttons_reuse_password_after_required_checkbox():
+def test_ai_chat_fault_buttons_use_independent_password_confirmation():
+    section = VIEWS[VIEWS.index("def render_ai_chat"):VIEWS.index("def _render_profile_cards")]
+
     assert "from allstar.ui.dashboard.access_control import matches_test_tab_password" in VIEWS
     assert "matches_test_tab_password(password)" in VIEWS
     assert '"ai_fault_test"' in VIEWS
     assert "비밀번호를 입력해야만 장애 상황 시험을 실행할 수 있습니다." in VIEWS
     assert "not fault_password_confirmed" in VIEWS
+    assert '_required_execution_password(\n            True,\n            "ai_fault_test"' in section
+    assert '_required_execution_password(\n            api_confirmed,\n            "ai_fault_test"' not in section
     assert "ai_fault_test_access" not in VIEWS
     assert "test_tab_access_" not in VIEWS
     assert "쿠키" not in VIEWS

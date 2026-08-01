@@ -77,6 +77,8 @@ def test_ai_chat_fault_buttons_and_reconnect_are_explicit():
     assert "_required_execution_password(" in section
     assert "비밀번호를 입력해야만 장애 상황 시험을 실행할 수 있습니다." in section
     assert "not fault_password_confirmed" in section
+    assert '_required_execution_password(\n            True,\n            "ai_fault_test"' in section
+    assert '_required_execution_password(\n            api_confirmed,\n            "ai_fault_test"' not in section
     assert section.index('"ai_fault_test"') < section.index('key="ai_fault_503"')
     assert "ai_fault_test_access" not in section
     assert "서버 중단 결과를 AI 답변 말풍선" in (ROOT / "_DOCS" / "AI_CHAT_FAULT_TEST_BUTTONS.md").read_text(encoding="utf-8")

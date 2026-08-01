@@ -304,29 +304,45 @@ def _required_api_confirmation(key: str, label: str) -> bool:
 
 
 def _required_execution_password(confirmed: bool, key: str, help_text: str) -> bool:
-    """필수 확인 후에만 실행 비밀번호를 받고 현재 입력값을 서버에서 검증한다."""
+    """필수 확인 후 표시한 폼을 제출해야 현재 브라우저 세션의 실행 권한을 부여한다."""
     safe_key = re.sub(r"[^a-zA-Z0-9_-]", "_", key)
     input_key = f"execution_password_input_{safe_key}"
+    verified_key = f"execution_password_verified_{safe_key}"
+    error_key = f"execution_password_error_{safe_key}"
     if not confirmed:
         st.session_state.pop(input_key, None)
+        st.session_state.pop(verified_key, None)
+        st.session_state.pop(error_key, None)
         return False
 
     with st.container(border=True, key=f"execution_password_{safe_key}"):
         st.markdown("<div class='execution-password-title'>실행 비밀번호 확인</div>", unsafe_allow_html=True)
         st.caption(help_text)
-        password = st.text_input(
-            "비밀번호",
-            type="password",
-            key=input_key,
-            placeholder="비밀번호 입력",
-        )
-        verified = bool(password) and matches_test_tab_password(password)
+        with st.form(f"execution_password_form_{safe_key}"):
+            input_column, submit_column = st.columns([4, 1], gap="small", vertical_alignment="bottom")
+            password = input_column.text_input(
+                "비밀번호",
+                type="password",
+                key=input_key,
+                placeholder="비밀번호 입력",
+            )
+            submitted = submit_column.form_submit_button(
+                "확인",
+                type="primary",
+                use_container_width=True,
+            )
+        if submitted:
+            verified = bool(password) and matches_test_tab_password(password)
+            st.session_state[verified_key] = verified
+            st.session_state[error_key] = not verified
+
+        verified = bool(st.session_state.get(verified_key, False))
         if verified:
             st.success("비밀번호가 확인되었습니다. 시험 실행 버튼을 사용할 수 있습니다.")
-        elif password:
+        elif st.session_state.get(error_key, False):
             st.error("비밀번호가 올바르지 않습니다. 비밀번호를 다시 입력해 주세요.")
         else:
-            st.caption("올바른 비밀번호를 입력하면 시험 실행 버튼이 활성화됩니다.")
+            st.caption("비밀번호를 입력한 뒤 확인 버튼을 누르거나 Enter 키를 누르면 적용됩니다.")
         return verified
 
 
@@ -1088,7 +1104,7 @@ def render_ai_chat() -> None:
             "시험 결과는 대화·보고서에 N/A로 기록됩니다."
         )
         fault_password_confirmed = _required_execution_password(
-            api_confirmed,
+            True,
             "ai_fault_test",
             "비밀번호를 입력해야만 장애 상황 시험을 실행할 수 있습니다.",
         )
