@@ -1,6 +1,7 @@
 """배치 품질 회귀 파이프라인 — 케이스마다 규칙 기반/API 기반 두 에이전트의 답변을 받아
 동일한 규칙 검증 + AI Judge 루브릭으로 채점해 비교한다 (ai_quality_final_project의 비교 평가 방식).
 API 호출 실패는 FAIL이 아닌 N/A(채점 불가)로 분리 집계한다."""
+import argparse
 import json
 from datetime import datetime
 from pathlib import Path
@@ -155,5 +156,13 @@ def run_pipeline(test_cases: list, timestamp: str) -> list:
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--limit", type=int, help="파일 정의 순서대로 실행할 최대 테스트케이스 수")
+    args = parser.parse_args()
+    test_cases = load_test_cases(TEST_CASE_FILE)
+    if args.limit is not None:
+        if args.limit < 1:
+            parser.error("--limit은 1 이상이어야 합니다.")
+        test_cases = test_cases[:args.limit]
     timestamp = f"{datetime.now():%Y%m%d_%H%M%S}"
-    run_pipeline(load_test_cases(TEST_CASE_FILE), timestamp)
+    run_pipeline(test_cases, timestamp)

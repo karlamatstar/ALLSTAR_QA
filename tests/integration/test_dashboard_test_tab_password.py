@@ -30,22 +30,20 @@ def test_test_tab_password_can_be_changed_by_environment(monkeypatch):
     assert matches_test_tab_password("9876") is True
 
 
-def test_three_top_test_tabs_are_independently_password_protected():
-    expected = (
-        '("k6_load", "K6 부하 테스트", render_k6_load_test)',
-        '("ai_testcases", "AI 에이전트 테스트케이스", render_ai_testcases)',
-        '("voc_testcases", "VOC 테스트케이스", render_voc_testcases)',
-    )
-
-    assert "type=\"password\"" in APP
-    assert '[data-testid="stFormSubmitButton"] button:not(:disabled)' in APP
-    assert "비밀번호가 올바르지 않습니다. 비밀번호를 다시 입력해 주세요." in APP
-    assert "test_tab_access_{tab_key}" in APP
-    assert "@st.fragment\ndef _render_test_tab_password_gate" in APP
-    assert 'st.rerun(scope="app")' in APP
+def test_three_top_test_tabs_are_visible_and_protect_actual_execution():
+    assert "_render_test_tab_password_gate" not in APP
+    assert "_render_password_protected_test_tab" not in APP
     assert APP.index("with tab_k6_load:") < APP.index("with tab_ai_chat:")
-    for call in expected:
-        assert call in APP
+    assert "render_k6_load_test()" in APP
+    assert "render_ai_testcases()" in APP
+    assert "render_voc_testcases()" in APP
+
+    assert "def _required_execution_password" in VIEWS
+    assert 'type="password"' in VIEWS
+    assert "matches_test_tab_password(password)" in VIEWS
+    for key in ("k6_api_performance", "ai_testcases", "voc_testcases"):
+        assert f'"{key}"' in VIEWS
+    assert VIEWS.count("실행 비밀번호 입력이 필요함을 이해했습니다.") == 3
 
 
 def test_docker_streamlit_receives_the_configurable_demo_password():
@@ -55,9 +53,12 @@ def test_docker_streamlit_receives_the_configurable_demo_password():
     assert "DASHBOARD_TEST_TABS_PASSWORD=1234" in ENV_EXAMPLE
 
 
-def test_ai_chat_fault_buttons_reuse_password_but_keep_separate_session_access():
+def test_ai_chat_fault_buttons_reuse_password_after_required_checkbox():
     assert "from allstar.ui.dashboard.access_control import matches_test_tab_password" in VIEWS
     assert "matches_test_tab_password(password)" in VIEWS
-    assert "ai_fault_test_access" in VIEWS
+    assert '"ai_fault_test"' in VIEWS
+    assert "비밀번호를 입력해야만 장애 상황 시험을 실행할 수 있습니다." in VIEWS
+    assert "not fault_password_confirmed" in VIEWS
+    assert "ai_fault_test_access" not in VIEWS
     assert "test_tab_access_" not in VIEWS
     assert "쿠키" not in VIEWS

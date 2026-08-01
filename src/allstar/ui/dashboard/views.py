@@ -73,6 +73,7 @@ VOC_AGENT_HOSTS = {
 }
 TIMEOUT = httpx.Timeout(190.0, connect=5.0)
 CREATE_NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0) if os.name == "nt" else 0
+DASHBOARD_TEST_CASE_LIMIT = 10
 
 AI_CASES_PATH = Path(
     os.getenv(
@@ -300,6 +301,33 @@ def _required_api_confirmation(key: str, label: str) -> bool:
     with st.container(key=f"required_api_confirm_{safe_key}"):
         st.markdown("<div class='required-confirm-title'>필수 체크 사항</div>", unsafe_allow_html=True)
         return st.checkbox(label, key=key)
+
+
+def _required_execution_password(confirmed: bool, key: str, help_text: str) -> bool:
+    """필수 확인 후에만 실행 비밀번호를 받고 현재 입력값을 서버에서 검증한다."""
+    safe_key = re.sub(r"[^a-zA-Z0-9_-]", "_", key)
+    input_key = f"execution_password_input_{safe_key}"
+    if not confirmed:
+        st.session_state.pop(input_key, None)
+        return False
+
+    with st.container(border=True, key=f"execution_password_{safe_key}"):
+        st.markdown("<div class='execution-password-title'>실행 비밀번호 확인</div>", unsafe_allow_html=True)
+        st.caption(help_text)
+        password = st.text_input(
+            "비밀번호",
+            type="password",
+            key=input_key,
+            placeholder="비밀번호 입력",
+        )
+        verified = bool(password) and matches_test_tab_password(password)
+        if verified:
+            st.success("비밀번호가 확인되었습니다. 시험 실행 버튼을 사용할 수 있습니다.")
+        elif password:
+            st.error("비밀번호가 올바르지 않습니다. 비밀번호를 다시 입력해 주세요.")
+        else:
+            st.caption("올바른 비밀번호를 입력하면 시험 실행 버튼이 활성화됩니다.")
+        return verified
 
 
 def _render_dataframe(df: pd.DataFrame, height: int = 330) -> None:
@@ -978,39 +1006,6 @@ def _complete_ai_chat_request(history: list[dict[str, Any]], pending: dict[str, 
     return True
 
 
-@st.fragment
-def _render_ai_fault_test_password_gate() -> None:
-    """현재 브라우저 세션에서만 AI 챗봇 장애 시험 버튼 잠금을 해제한다."""
-    with st.container(border=True, key="ai_fault_test_password_gate"):
-        st.markdown("#### 장애 상황 시험 접근 확인")
-        st.caption(
-            "503·504 오류와 실제 채팅 서버 중단을 재현하는 기능입니다. "
-            "의도하지 않은 서비스 중단을 막기 위해 비밀번호 확인 후 사용할 수 있습니다."
-        )
-        with st.form("ai_fault_test_password_form"):
-            password = st.text_input(
-                "비밀번호",
-                type="password",
-                key="ai_fault_test_password_input",
-                placeholder="비밀번호 입력",
-            )
-            submitted = st.form_submit_button(
-                "장애 상황 시험 잠금 해제",
-                type="primary",
-                use_container_width=True,
-            )
-        if submitted:
-            if matches_test_tab_password(password):
-                st.session_state.ai_fault_test_access = True
-                st.session_state.ai_fault_test_password_error = False
-                st.rerun(scope="app")
-            else:
-                st.session_state.ai_fault_test_access = False
-                st.session_state.ai_fault_test_password_error = True
-        if st.session_state.get("ai_fault_test_password_error", False):
-            st.error("비밀번호가 올바르지 않습니다. 비밀번호를 다시 입력해 주세요.")
-
-
 def render_ai_chat() -> None:
     _section("AI 에이전트 챗봇", "실시간 대화·로그·품질 분석 기능을 통합한 화면입니다.")
     tab_chat, tab_log, tab_quality, tab_breakdown, tab_detail = st.tabs(
@@ -1092,24 +1087,26 @@ def render_ai_chat() -> None:
             "503·504·채팅 서버 중단 시험은 외부 AI API를 호출하지 않으므로 API 비용이 발생하지 않습니다. "
             "시험 결과는 대화·보고서에 N/A로 기록됩니다."
         )
-        if not st.session_state.get("ai_fault_test_access", False):
-            _render_ai_fault_test_password_gate()
-        else:
-            cases_available = bool(_read_json(AI_CASES_PATH, []))
-            fault_disabled = bool(pending) or server_down or not cases_available
-            fault_503, fault_504, fault_down = st.columns(3)
-            with fault_503:
-                if st.button("503 서비스 이용 불가 시험", key="ai_fault_503", disabled=fault_disabled, width="stretch"):
-                    if _start_ai_fault_request(history, "http_503"):
-                        st.rerun()
-            with fault_504:
-                if st.button("504 시간 초과 시험", key="ai_fault_504", disabled=fault_disabled, width="stretch"):
-                    if _start_ai_fault_request(history, "http_504"):
-                        st.rerun()
-            with fault_down:
-                if st.button("채팅 서버 중단 시험", key="ai_fault_server_down", disabled=fault_disabled, width="stretch"):
-                    if _start_ai_fault_request(history, "server_down"):
-                        st.rerun()
+        fault_password_confirmed = _required_execution_password(
+            api_confirmed,
+            "ai_fault_test",
+            "비밀번호를 입력해야만 장애 상황 시험을 실행할 수 있습니다.",
+        )
+        cases_available = bool(_read_json(AI_CASES_PATH, []))
+        fault_disabled = bool(pending) or server_down or not cases_available or not fault_password_confirmed
+        fault_503, fault_504, fault_down = st.columns(3)
+        with fault_503:
+            if st.button("503 서비스 이용 불가 시험", key="ai_fault_503", disabled=fault_disabled, width="stretch"):
+                if _start_ai_fault_request(history, "http_503"):
+                    st.rerun()
+        with fault_504:
+            if st.button("504 시간 초과 시험", key="ai_fault_504", disabled=fault_disabled, width="stretch"):
+                if _start_ai_fault_request(history, "http_504"):
+                    st.rerun()
+        with fault_down:
+            if st.button("채팅 서버 중단 시험", key="ai_fault_server_down", disabled=fault_disabled, width="stretch"):
+                if _start_ai_fault_request(history, "server_down"):
+                    st.rerun()
         if question:
             st.session_state.pop("ai_chat_server_recovered", None)
             history.append({"role": "user", "content": question, "label": "사용자", "timestamp": _local_time_text()})
@@ -1816,7 +1813,12 @@ def _render_k6_card(spec: Any, environment: dict[str, Any], run: Any) -> None:
         if spec.actual_api:
             api_confirmed = _required_api_confirmation(
                 "k6_api_performance_confirm",
-                "실제 AI API 호출과 비용 발생 가능성을 확인했습니다.",
+                "실제 AI API 호출과 비용 발생 가능성을 확인했으며, 실행 비밀번호 입력이 필요함을 이해했습니다.",
+            )
+            api_confirmed = _required_execution_password(
+                api_confirmed,
+                "k6_api_performance",
+                "비밀번호가 확인되어야 서버 연결 성능 종합 시험을 실행할 수 있습니다.",
             )
         missing = []
         if not environment["k6"]["ok"]:
@@ -1923,10 +1925,13 @@ def _render_k6_load_test_fragment() -> None:
         unsafe_allow_html=True,
     )
     run = poll_current_run()
-    rows = (K6_TEST_SPECS[:4], K6_TEST_SPECS[4:])
-    for row_index, specs in enumerate(rows):
+    rows = (
+        (K6_TEST_SPECS[:4], 4),
+        (K6_TEST_SPECS[4:], [1, 1, 2]),
+    )
+    for row_index, (specs, column_widths) in enumerate(rows):
         with st.container(key=f"k6_card_row_{row_index}"):
-            columns = st.columns(len(specs), gap="medium")
+            columns = st.columns(column_widths, gap="medium")
             for column, spec in zip(columns, specs):
                 with column:
                     _render_k6_card(spec, environment, run)
@@ -2400,6 +2405,7 @@ def _render_quality_detail(
 def _render_ai_case_management() -> None:
     cases = _read_json(AI_CASES_PATH, [])
     running = bool(st.session_state.get("ai_batch_process"))
+    add_disabled = running or len(cases) >= DASHBOARD_TEST_CASE_LIMIT
     _section("현재 테스트케이스")
     if running:
         st.warning("AI 에이전트 배치 테스트가 실행 중이므로 테스트케이스 추가·수정·삭제를 잠갔습니다.")
@@ -2455,18 +2461,26 @@ def _render_ai_case_management() -> None:
                     st.rerun()
 
     with st.expander("새 테스트케이스 추가", expanded=False, key="ai_case_add_expander"):
+        if len(cases) >= DASHBOARD_TEST_CASE_LIMIT:
+            st.info(f"최대 {DASHBOARD_TEST_CASE_LIMIT}개가 등록되어 새 테스트케이스를 추가할 수 없습니다.")
         with st.form("ai_case_add", clear_on_submit=True):
             columns = st.columns(3)
-            case_id = columns[0].text_input("테스트케이스 ID", value=_next_case_id(cases, 3))
-            category = columns[1].text_input("카테고리")
-            test_type = columns[2].selectbox("시험 유형", ["Happy", "Edge", "Negative"])
-            question = st.text_input("사용자 질문")
-            keyword = st.text_input("기대 키워드")
-            policy = st.text_input("기대 정책")
-            submitted = st.form_submit_button("테스트케이스 저장", type="primary", disabled=running)
+            case_id = columns[0].text_input(
+                "테스트케이스 ID", value=_next_case_id(cases, 3), disabled=add_disabled
+            )
+            category = columns[1].text_input("카테고리", disabled=add_disabled)
+            test_type = columns[2].selectbox(
+                "시험 유형", ["Happy", "Edge", "Negative"], disabled=add_disabled
+            )
+            question = st.text_input("사용자 질문", disabled=add_disabled)
+            keyword = st.text_input("기대 키워드", disabled=add_disabled)
+            policy = st.text_input("기대 정책", disabled=add_disabled)
+            submitted = st.form_submit_button("테스트케이스 저장", type="primary", disabled=add_disabled)
         if submitted:
             values = [case_id, category, question, keyword, policy]
-            if not all(value.strip() for value in values):
+            if len(cases) >= DASHBOARD_TEST_CASE_LIMIT:
+                st.error(f"테스트케이스는 최대 {DASHBOARD_TEST_CASE_LIMIT}개까지 등록할 수 있습니다.")
+            elif not all(value.strip() for value in values):
                 st.error("모든 필수값을 입력하세요.")
             elif any(case["case_id"] == case_id.strip() for case in cases):
                 st.error("이미 존재하는 테스트케이스 ID입니다.")
@@ -2479,12 +2493,31 @@ def _render_ai_case_management() -> None:
                 st.success("테스트케이스를 추가했습니다.")
                 st.rerun()
     with st.expander("테스트케이스 삭제", key="ai_case_delete_expander"):
-        delete_ids = st.multiselect("삭제할 테스트케이스", [case["case_id"] for case in cases], key="ai_delete_ids")
-        confirm = st.checkbox("선택한 테스트케이스 삭제를 확인합니다.", key="ai_delete_confirm")
-        if st.button("선택 삭제", disabled=running or not (delete_ids and confirm), key="ai_delete_button"):
-            _archive_ai_case_document(cases)
-            _write_json(AI_CASES_PATH, [case for case in cases if case["case_id"] not in delete_ids])
-            st.rerun()
+        delete_locked = running or len(cases) <= 1
+        if len(cases) <= 1:
+            st.info("테스트 실행을 위해 최소 1개의 테스트케이스를 유지해야 하므로 더 이상 삭제할 수 없습니다.")
+        delete_ids = st.multiselect(
+            "삭제할 테스트케이스",
+            [case["case_id"] for case in cases],
+            key="ai_delete_ids",
+            disabled=delete_locked,
+        )
+        confirm = st.checkbox(
+            "선택한 테스트케이스 삭제를 확인합니다.", key="ai_delete_confirm", disabled=delete_locked
+        )
+        leaves_at_least_one = len(cases) - len(delete_ids) >= 1
+        if st.button(
+            "선택 삭제",
+            disabled=delete_locked or not (delete_ids and confirm and leaves_at_least_one),
+            key="ai_delete_button",
+        ):
+            remaining = [case for case in cases if case["case_id"] not in delete_ids]
+            if not remaining:
+                st.error("최소 1개의 테스트케이스는 유지해야 합니다.")
+            else:
+                _archive_ai_case_document(cases)
+                _write_json(AI_CASES_PATH, remaining)
+                st.rerun()
     _enable_management_expander_scroll(
         "ai_case_edit_expander",
         "ai_case_add_expander",
@@ -2493,32 +2526,58 @@ def _render_ai_case_management() -> None:
 
 
 def _render_ai_case_execution() -> None:
-    cases = _read_json(AI_CASES_PATH, [])
+    registered_cases = _read_json(AI_CASES_PATH, [])
+    cases = registered_cases[:DASHBOARD_TEST_CASE_LIMIT]
     running = bool(st.session_state.get("ai_batch_process"))
     st.markdown(
-        f"<div class='scope-box'><b>전체 실행 범위</b><br>등록된 테스트케이스 전체 {len(cases)}건을 "
+        f"<div class='scope-box'><b>전체 실행 범위</b><br>이번 실행 대상 {len(cases)}건을 "
         "규칙 기반과 서버 연결 방식(API)으로 각각 실행해 답변과 품질 판정을 비교합니다.<br>"
         "실행 로그는 누적되고 최신 배치 품질 보고서는 실행 완료 후 자동 갱신됩니다.</div>",
         unsafe_allow_html=True,
     )
     if not cases:
         st.warning("실행할 테스트케이스가 없습니다. 테스트케이스 관리 탭에서 먼저 추가해 주세요.")
+    elif len(registered_cases) > DASHBOARD_TEST_CASE_LIMIT:
+        st.warning(
+            f"등록된 {len(registered_cases)}건 중 대시보드 실행 한도에 따라 앞의 "
+            f"{DASHBOARD_TEST_CASE_LIMIT}건만 실행합니다."
+        )
     elif running:
         st.info(f"등록된 전체 {len(cases)}건을 실행 중입니다. 아래에서 진행 상태를 확인하거나 실행을 중단할 수 있습니다.")
     else:
         st.caption(f"현재 등록된 전체 {len(cases)}건을 한 번에 실행합니다. 외부 AI API 호출 수와 비용은 모델 응답·재시도에 따라 달라질 수 있습니다.")
     confirm_run = _required_api_confirmation(
         "ai_run_confirm",
-        "전체 테스트케이스 실행 범위와 외부 API 비용 발생 가능성을 확인했습니다.",
+        "전체 테스트케이스 실행 범위와 외부 API 비용 발생 가능성을 확인했으며, 실행 비밀번호 입력이 필요함을 이해했습니다.",
     )
-    if st.button("전체 테스트케이스 실행", type="primary", disabled=not cases or not confirm_run or running):
-        _launch_process("ai_batch_process", [sys.executable, "-u", "-m", "allstar.ai_agent.evaluation.quality_pipeline"], "dashboard_ai_batch")
+    password_confirmed = _required_execution_password(
+        confirm_run,
+        "ai_testcases",
+        "비밀번호가 확인되어야 전체 AI 에이전트 테스트케이스를 실행할 수 있습니다.",
+    )
+    if st.button("전체 테스트케이스 실행", type="primary", disabled=not cases or not password_confirmed or running):
+        _launch_process(
+            "ai_batch_process",
+            [
+                sys.executable,
+                "-u",
+                "-m",
+                "allstar.ai_agent.evaluation.quality_pipeline",
+                "--limit",
+                str(DASHBOARD_TEST_CASE_LIMIT),
+            ],
+            "dashboard_ai_batch",
+        )
         st.rerun()
     _render_process("ai_batch_process", "AI 에이전트 전체 테스트케이스")
 
 
 def render_ai_testcases() -> None:
     _section("AI 에이전트 테스트케이스", "테스트케이스 관리·전체 실행·품질 분석 기능을 제공합니다.")
+    st.info(
+        f"대시보드에서는 테스트케이스를 최소 1개, 최대 {DASHBOARD_TEST_CASE_LIMIT}개까지 관리하며 "
+        f"한 번에 최대 {DASHBOARD_TEST_CASE_LIMIT}개를 실행합니다."
+    )
     tab_manage, tab_run, tab_batch, tab_breakdown, tab_detail = st.tabs(
         ["테스트케이스 관리", "테스트케이스 실행", "배치 품질 현황", "유형별 비교", "케이스 상세"]
     )
@@ -2592,6 +2651,7 @@ def _render_voc_case_management() -> list[dict]:
     document = _read_json(VOC_CASES_PATH, {"description": "", "cases": []})
     cases = list(document.get("cases", []))
     running = bool(st.session_state.get("voc_profile_process"))
+    add_disabled = running or len(cases) >= DASHBOARD_TEST_CASE_LIMIT
     _section("현재 VOC 테스트케이스")
     if running:
         st.warning("A~D 테스트케이스 실행 중이므로 테스트케이스 추가·수정·삭제를 잠갔습니다.")
@@ -2690,21 +2750,29 @@ def _render_voc_case_management() -> list[dict]:
                     st.rerun()
 
     with st.expander("새 VOC 테스트케이스 추가", key="voc_case_add_expander"):
+        if len(cases) >= DASHBOARD_TEST_CASE_LIMIT:
+            st.info(f"최대 {DASHBOARD_TEST_CASE_LIMIT}개가 등록되어 새 VOC 테스트케이스를 추가할 수 없습니다.")
         with st.form("voc_case_add", clear_on_submit=True):
             columns = st.columns(3)
-            case_id = columns[0].text_input("테스트케이스 ID", value=_next_case_id(cases, 2))
-            category = columns[1].text_input("카테고리")
-            judge_enabled = columns[2].checkbox("독립 품질 평가 사용", value=True)
-            question = st.text_area("질문")
-            intent = st.text_input("기대 의도")
-            keywords = st.text_input("기대 키워드 (쉼표로 구분)")
-            required = st.text_input("필수 출력 (쉼표로 구분)")
-            prohibited = st.text_input("금지 출력 (쉼표로 구분)")
-            expect_no_data = st.checkbox("관련 데이터 없음이 정답인 사례")
-            note = st.text_input("참고 사항 (선택)")
-            submitted = st.form_submit_button("VOC 테스트케이스 저장", type="primary", disabled=running)
+            case_id = columns[0].text_input(
+                "테스트케이스 ID", value=_next_case_id(cases, 2), disabled=add_disabled
+            )
+            category = columns[1].text_input("카테고리", disabled=add_disabled)
+            judge_enabled = columns[2].checkbox(
+                "독립 품질 평가 사용", value=True, disabled=add_disabled
+            )
+            question = st.text_area("질문", disabled=add_disabled)
+            intent = st.text_input("기대 의도", disabled=add_disabled)
+            keywords = st.text_input("기대 키워드 (쉼표로 구분)", disabled=add_disabled)
+            required = st.text_input("필수 출력 (쉼표로 구분)", disabled=add_disabled)
+            prohibited = st.text_input("금지 출력 (쉼표로 구분)", disabled=add_disabled)
+            expect_no_data = st.checkbox("관련 데이터 없음이 정답인 사례", disabled=add_disabled)
+            note = st.text_input("참고 사항 (선택)", disabled=add_disabled)
+            submitted = st.form_submit_button("VOC 테스트케이스 저장", type="primary", disabled=add_disabled)
         if submitted:
-            if not all(value.strip() for value in (case_id, category, question, intent, keywords, required, prohibited)):
+            if len(cases) >= DASHBOARD_TEST_CASE_LIMIT:
+                st.error(f"VOC 테스트케이스는 최대 {DASHBOARD_TEST_CASE_LIMIT}개까지 등록할 수 있습니다.")
+            elif not all(value.strip() for value in (case_id, category, question, intent, keywords, required, prohibited)):
                 st.error("필수값을 모두 입력하세요.")
             elif any(case["case_id"] == case_id.strip() for case in cases):
                 st.error("이미 존재하는 테스트케이스 ID입니다.")
@@ -2723,12 +2791,33 @@ def _render_voc_case_management() -> list[dict]:
                 _write_json(VOC_CASES_PATH, {**document, "cases": cases})
                 st.rerun()
     with st.expander("VOC 테스트케이스 삭제", key="voc_case_delete_expander"):
-        delete_ids = st.multiselect("삭제할 테스트케이스", [case["case_id"] for case in cases], key="voc_delete_ids")
-        confirm = st.checkbox("선택한 VOC 테스트케이스 삭제를 확인합니다.", key="voc_delete_confirm")
-        if st.button("선택 삭제", disabled=running or not (delete_ids and confirm), key="voc_delete_button"):
-            _archive_voc_case_document(document)
-            _write_json(VOC_CASES_PATH, {**document, "cases": [case for case in cases if case["case_id"] not in delete_ids]})
-            st.rerun()
+        delete_locked = running or len(cases) <= 1
+        if len(cases) <= 1:
+            st.info("테스트 실행을 위해 최소 1개의 VOC 테스트케이스를 유지해야 하므로 더 이상 삭제할 수 없습니다.")
+        delete_ids = st.multiselect(
+            "삭제할 테스트케이스",
+            [case["case_id"] for case in cases],
+            key="voc_delete_ids",
+            disabled=delete_locked,
+        )
+        confirm = st.checkbox(
+            "선택한 VOC 테스트케이스 삭제를 확인합니다.",
+            key="voc_delete_confirm",
+            disabled=delete_locked,
+        )
+        leaves_at_least_one = len(cases) - len(delete_ids) >= 1
+        if st.button(
+            "선택 삭제",
+            disabled=delete_locked or not (delete_ids and confirm and leaves_at_least_one),
+            key="voc_delete_button",
+        ):
+            remaining = [case for case in cases if case["case_id"] not in delete_ids]
+            if not remaining:
+                st.error("최소 1개의 VOC 테스트케이스는 유지해야 합니다.")
+            else:
+                _archive_voc_case_document(document)
+                _write_json(VOC_CASES_PATH, {**document, "cases": remaining})
+                st.rerun()
     _enable_management_expander_scroll(
         "voc_case_edit_expander",
         "voc_case_add_expander",
@@ -2852,6 +2941,8 @@ def _scroll_to_voc_run_bottom(run_id: str, phase: str = "launch") -> None:
 
 @st.fragment(run_every=1.0)
 def _render_voc_real_test(cases: list[dict]) -> None:
+    registered_total = len(cases)
+    cases = cases[:DASHBOARD_TEST_CASE_LIMIT]
     total = len(cases)
     ai_targets = sum(bool(case.get("judge_enabled", False)) for case in cases)
     st.markdown(
@@ -2860,9 +2951,19 @@ def _render_voc_real_test(cases: list[dict]) -> None:
         unsafe_allow_html=True,
     )
     st.caption("A·B·C·D 중 하나를 누르면 해당 프로필로 등록된 전체 테스트케이스를 실행합니다. 한 번에 하나만 실행할 수 있습니다.")
+    if registered_total > DASHBOARD_TEST_CASE_LIMIT:
+        st.warning(
+            f"등록된 {registered_total}건 중 대시보드 실행 한도에 따라 앞의 "
+            f"{DASHBOARD_TEST_CASE_LIMIT}건만 실행합니다."
+        )
     confirmed = _required_api_confirmation(
         "voc_all_confirm",
-        "전체 테스트케이스 실행 범위와 외부 API 비용 발생 가능성을 확인했습니다.",
+        "전체 테스트케이스 실행 범위와 외부 API 비용 발생 가능성을 확인했으며, 실행 비밀번호 입력이 필요함을 이해했습니다.",
+    )
+    password_confirmed = _required_execution_password(
+        confirmed,
+        "voc_testcases",
+        "비밀번호가 확인되어야 VOC 프로필별 전체 테스트케이스를 실행할 수 있습니다.",
     )
     process_state = st.session_state.get("voc_profile_process")
     process = process_state.get("process") if process_state else None
@@ -2899,7 +3000,7 @@ def _render_voc_real_test(cases: list[dict]) -> None:
                 f"독립 평가: {judge['provider']} / {judge['model']} / {reasoning_text(judge['reasoning'])}</div></div></div>",
                 unsafe_allow_html=True,
             )
-            disabled = running or (not completed_pending and (not confirmed or not cases))
+            disabled = running or (not completed_pending and (not password_confirmed or not cases))
             clicked = st.button(
                 f"{profile['profile_id']} 전체 테스트 실행",
                 key=f"run_profile_{profile['profile_id']}",
@@ -2919,6 +3020,11 @@ def _render_voc_real_test(cases: list[dict]) -> None:
                         sys.executable, "-u",
                         str(PROJECT_ROOT / "tools" / "scripts" / "run_voc_profile.py"),
                         "--profile", profile["profile_id"], "--run-id", run_id,
+                        *(
+                            [part for case in cases for part in ("--case-id", case["case_id"])]
+                            if registered_total > DASHBOARD_TEST_CASE_LIMIT
+                            else []
+                        ),
                     ],
                     f"dashboard_voc_{profile['profile_id'].lower()}",
                     run_id=run_id,
@@ -3035,6 +3141,10 @@ def _render_voc_real_test(cases: list[dict]) -> None:
 
 def render_voc_testcases() -> None:
     _section("VOC 테스트케이스", "테스트케이스를 관리하고 A~D 프로필별 전체 테스트케이스를 실행합니다.")
+    st.info(
+        f"대시보드에서는 테스트케이스를 최소 1개, 최대 {DASHBOARD_TEST_CASE_LIMIT}개까지 관리하며 "
+        f"한 번에 최대 {DASHBOARD_TEST_CASE_LIMIT}개를 실행합니다."
+    )
     tab_manage, tab_test = st.tabs(["테스트케이스 관리", "테스트케이스 실행"])
     with tab_manage:
         cases = _render_voc_case_management()

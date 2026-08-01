@@ -46,5 +46,9 @@ def test_ai_case_edit_ui_preserves_id_and_locks_changes_during_run():
     assert "기존 AI 에이전트 테스트케이스 확인·수정" in source
     assert 'text_input("테스트케이스 ID", value=selected_id, disabled=True)' in source
     assert "_archive_ai_case_document(cases)" in source
-    assert 'submitted = st.form_submit_button("테스트케이스 저장", type="primary", disabled=running)' in source
-    assert 'disabled=running or not (delete_ids and confirm)' in source
+    assert 'submitted = st.form_submit_button("테스트케이스 저장", type="primary", disabled=add_disabled)' in source
+    assert "DASHBOARD_TEST_CASE_LIMIT = 10" in source
+    assert "len(cases) >= DASHBOARD_TEST_CASE_LIMIT" in source
+    assert "len(cases) - len(delete_ids) >= 1" in source
+    assert "최소 1개의 테스트케이스는 유지해야 합니다." in source
+    assert '"--limit"' in source

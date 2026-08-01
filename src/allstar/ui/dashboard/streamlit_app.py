@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import streamlit as st
 
-from allstar.ui.dashboard.access_control import matches_test_tab_password
 from allstar.ui.dashboard.views import (
     render_ai_chat,
     render_ai_testcases,
@@ -13,52 +12,6 @@ from allstar.ui.dashboard.views import (
     render_voc_testcases,
     watch_voc_report_updates,
 )
-
-
-def _test_tab_access_keys(tab_key: str) -> tuple[str, str, str]:
-    return (
-        f"test_tab_access_{tab_key}",
-        f"test_tab_password_{tab_key}",
-        f"test_tab_password_error_{tab_key}",
-    )
-
-
-@st.fragment
-def _render_test_tab_password_gate(tab_key: str, title: str) -> None:
-    access_key, input_key, error_key = _test_tab_access_keys(tab_key)
-    with st.container(border=True):
-        st.subheader(f"{title} 접근 확인")
-        st.caption("이 테스트 화면을 사용하려면 비밀번호를 입력해 주세요.")
-        with st.form(f"test_tab_password_form_{tab_key}"):
-            password = st.text_input(
-                "비밀번호",
-                type="password",
-                key=input_key,
-                placeholder="비밀번호 입력",
-            )
-            submitted = st.form_submit_button(
-                "확인",
-                type="primary",
-                use_container_width=True,
-            )
-        if submitted:
-            if matches_test_tab_password(password):
-                st.session_state[access_key] = True
-                st.session_state[error_key] = False
-                st.rerun(scope="app")
-            else:
-                st.session_state[access_key] = False
-                st.session_state[error_key] = True
-        if st.session_state.get(error_key, False):
-            st.error("비밀번호가 올바르지 않습니다. 비밀번호를 다시 입력해 주세요.")
-
-
-def _render_password_protected_test_tab(tab_key: str, title: str, renderer) -> None:
-    access_key, _input_key, _error_key = _test_tab_access_keys(tab_key)
-    if st.session_state.get(access_key, False):
-        renderer()
-        return
-    _render_test_tab_password_gate(tab_key, title)
 
 
 st.set_page_config(page_title="AI Agent QA AllStar", page_icon="⭐", layout="wide")
@@ -327,6 +280,11 @@ header[data-testid="stHeader"] {height:0; visibility:hidden;}
     box-shadow:0 0 0 2px rgba(245,158,11,.06);
 }
 [class*="st-key-required_api_confirm_"] [data-testid="stCheckbox"] label p {font-weight:750; color:var(--allstar-text);}
+.execution-password-title {color:var(--allstar-selected); font-size:.88rem; font-weight:900; letter-spacing:.01em;}
+[class*="st-key-execution_password_"] [data-testid="stVerticalBlockBorderWrapper"] {
+    border-color:var(--allstar-selected) !important;
+    background:linear-gradient(135deg, rgba(36,95,166,.10), rgba(36,95,166,.03)) !important;
+}
 [class*="st-key-ai_chat_panel"], [class*="st-key-voc_chat_panel"] {gap:0 !important;}
 [class*="st-key-ai_chat_panel"] > div, [class*="st-key-voc_chat_panel"] > div {gap:0 !important;}
 [class*="st-key-ai_chat_panel"] > [data-testid="stLayoutWrapper"],
@@ -620,13 +578,13 @@ watch_voc_report_updates()
 )
 
 with tab_k6_load:
-    _render_password_protected_test_tab("k6_load", "K6 부하 테스트", render_k6_load_test)
+    render_k6_load_test()
 
 with tab_ai_cases:
-    _render_password_protected_test_tab("ai_testcases", "AI 에이전트 테스트케이스", render_ai_testcases)
+    render_ai_testcases()
 
 with tab_voc_cases:
-    _render_password_protected_test_tab("voc_testcases", "VOC 테스트케이스", render_voc_testcases)
+    render_voc_testcases()
 
 with tab_ai_chat:
     render_ai_chat()

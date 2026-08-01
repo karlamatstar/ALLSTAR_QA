@@ -208,6 +208,16 @@ def test_k6_top_tab_has_seven_cards_without_child_tabs():
     assert "args=(duration_key, K6_MIN_DURATION, K6_MAX_DURATION)" in VIEWS
     assert "가상 인원: 최소 {K6_MIN_VUS}명 · 최대 {K6_MAX_VUS}명" in VIEWS
     assert "실행 시간: 최소 {K6_MIN_DURATION}초 · 최대 {K6_MAX_DURATION}초" in VIEWS
+    assert "(K6_TEST_SPECS[:4], 4)" in VIEWS
+    assert "(K6_TEST_SPECS[4:], [1, 1, 2])" in VIEWS
+
+
+def test_testcase_pages_show_and_enforce_dashboard_case_limits():
+    assert "DASHBOARD_TEST_CASE_LIMIT = 10" in VIEWS
+    assert VIEWS.count("대시보드에서는 테스트케이스를 최소 1개, 최대") == 2
+    assert VIEWS.count("cases[:DASHBOARD_TEST_CASE_LIMIT]") == 2
+    assert "최소 1개의 테스트케이스를 유지해야" in VIEWS
+    assert "최소 1개의 VOC 테스트케이스를 유지해야" in VIEWS
     assert "범위를 벗어난 값을 직접 입력하면 최소값 또는 최대값으로 자동 조정됩니다." in VIEWS
     assert "def _clamp_k6_number_input" in VIEWS
     assert "def _enable_k6_number_hold_repeat" in VIEWS

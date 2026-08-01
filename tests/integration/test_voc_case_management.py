@@ -26,3 +26,9 @@ def test_voc_case_edit_ui_keeps_original_archive_read_only():
     assert "archive/revisions" not in source  # 경로는 안전한 Path 조합으로만 구성한다.
     assert '_archive_voc_case_document(document)' in source
     assert 'disabled=running' in source
+    assert "DASHBOARD_TEST_CASE_LIMIT = 10" in source
+    assert "len(cases) >= DASHBOARD_TEST_CASE_LIMIT" in source
+    assert "len(cases) - len(delete_ids) >= 1" in source
+    assert "최소 1개의 VOC 테스트케이스는 유지해야 합니다." in source
+    assert 'if registered_total > DASHBOARD_TEST_CASE_LIMIT' in source
+    assert 'for part in ("--case-id", case["case_id"])' in source

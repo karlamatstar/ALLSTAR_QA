@@ -57,7 +57,7 @@ def test_live_and_batch_breakdowns_share_radar_and_exact_score_table():
 
 
 def test_ai_chat_fault_buttons_and_reconnect_are_explicit():
-    section = VIEWS[VIEWS.index("def _render_ai_fault_test_password_gate"):VIEWS.index("def _render_profile_cards")]
+    section = VIEWS[VIEWS.index("def render_ai_chat"):VIEWS.index("def _render_profile_cards")]
     assert "503 서비스 이용 불가 시험" in VIEWS
     assert "504 시간 초과 시험" in VIEWS
     assert "채팅 서버 중단 시험" in VIEWS
@@ -73,17 +73,12 @@ def test_ai_chat_fault_buttons_and_reconnect_are_explicit():
     assert 'key="ai_fault_503"' in VIEWS
     assert 'key="ai_fault_504"' in VIEWS
     assert 'key="ai_fault_server_down"' in VIEWS
-    assert "@st.fragment\ndef _render_ai_fault_test_password_gate" in VIEWS
-    assert 'key="ai_fault_test_password_gate"' in section
-    assert 'type="password"' in section
-    assert "matches_test_tab_password(password)" in section
-    assert 'st.session_state.ai_fault_test_access = True' in section
-    assert 'if not st.session_state.get("ai_fault_test_access", False):' in section
-    assert section.index('if not st.session_state.get("ai_fault_test_access", False):') < section.index(
-        'key="ai_fault_503"'
-    )
-    assert "의도하지 않은 서비스 중단을 막기 위해 비밀번호 확인 후 사용할 수 있습니다." in section
-    assert "비밀번호가 올바르지 않습니다. 비밀번호를 다시 입력해 주세요." in section
+    assert '"ai_fault_test"' in section
+    assert "_required_execution_password(" in section
+    assert "비밀번호를 입력해야만 장애 상황 시험을 실행할 수 있습니다." in section
+    assert "not fault_password_confirmed" in section
+    assert section.index('"ai_fault_test"') < section.index('key="ai_fault_503"')
+    assert "ai_fault_test_access" not in section
     assert "서버 중단 결과를 AI 답변 말풍선" in (ROOT / "_DOCS" / "AI_CHAT_FAULT_TEST_BUTTONS.md").read_text(encoding="utf-8")
     assert "st-key-ai_chat_server_down_notice" in APP
 
