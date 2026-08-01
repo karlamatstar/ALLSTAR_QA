@@ -1069,9 +1069,11 @@ def _complete_ai_chat_request(history: list[dict[str, Any]], pending: dict[str, 
 
 
 def render_ai_chat() -> None:
-    _section(
-        "AI 에이전트 챗봇",
-        "AI 기반 SW 테스터 및 품질관리 실무 과정의 교육시간, 출결·수료, 커리큘럼, 평가와 지원 내용을 묻고 API·규칙 기반 답변과 품질평가를 비교합니다.",
+    _section("AI 에이전트 챗봇")
+    st.markdown(
+        "**교육과정 안내 AI 챗봇**\n\n"
+        "AI 기반 SW 테스터 및 품질관리 실무 과정의 교육시간, 출결·수료 기준, 커리큘럼, 평가와 지원 내용을 질문해 보세요. "
+        "같은 질문에 대한 AI 답변과 규칙 기반 답변을 나란히 확인하고, API·규칙 기반 답변의 품질평가 결과를 비교합니다."
     )
     tab_chat, tab_log, tab_quality, tab_breakdown, tab_detail = st.tabs(
         ["챗봇과 대화", "대화 로그", "품질 현황", "유형별 비교", "대화별 채점 상세"]
@@ -1656,9 +1658,12 @@ def _render_voc_chat_conversation() -> None:
 
 
 def render_voc_chat() -> None:
-    _section(
-        "VOC 챗봇",
-        "보험 서비스 고객불만 50건에서 관련 사례를 검색·요약하고 문제 원인, 고객 영향과 정책 개선안을 분석합니다. 질문마다 A~D 모델 프로필의 7단계 처리 결과와 100점 품질평가를 확인합니다.",
+    _section("VOC 챗봇")
+    st.markdown(
+        "**보험 서비스 고객불만 분석 챗봇**\n\n"
+        "보험 서비스 관련 고객불만에서 관련 사례를 검색하고 문제 원인, 고객 영향과 실행 가능한 개선안을 분석합니다. "
+        "분석할 주제와 원하는 비교·개선 방향을 질문해 보세요. "
+        "질문마다 A~D 모델 프로필의 7단계 처리 결과와 100점 품질평가를 확인합니다."
     )
     tab_chat, tab_log, tab_quality, tab_breakdown, tab_detail = st.tabs(
         ["챗봇과 대화", "대화 로그", "품질 현황", "유형별 비교", "대화별 채점 상세"]
