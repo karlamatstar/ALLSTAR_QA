@@ -1069,7 +1069,10 @@ def _complete_ai_chat_request(history: list[dict[str, Any]], pending: dict[str, 
 
 
 def render_ai_chat() -> None:
-    _section("AI 에이전트 챗봇", "실시간 대화·로그·품질 분석 기능을 통합한 화면입니다.")
+    _section(
+        "AI 에이전트 챗봇",
+        "AI 기반 SW 테스터 및 품질관리 실무 과정의 교육시간, 출결·수료, 커리큘럼, 평가와 지원 내용을 묻고 API·규칙 기반 답변과 품질평가를 비교합니다.",
+    )
     tab_chat, tab_log, tab_quality, tab_breakdown, tab_detail = st.tabs(
         ["챗봇과 대화", "대화 로그", "품질 현황", "유형별 비교", "대화별 채점 상세"]
     )
@@ -1143,6 +1146,9 @@ def render_ai_chat() -> None:
                 "AI 에이전트에게 질문하세요",
                 key="ai_chat_input",
                 disabled=not api_confirmed or bool(pending) or server_down,
+            )
+            st.caption(
+                "질문 예시: 총 교육시간, 지각·출결, 수료 기준, 커리큘럼, 평가·재시험, 장비·교재와 취업 지원"
             )
         st.markdown("### 장애 상황 시험")
         st.info(
@@ -1628,6 +1634,9 @@ def _render_voc_chat_conversation() -> None:
             key="voc_chat_input",
             disabled=bool(pending) or not api_confirmed or server_down,
         )
+        st.caption(
+            "질문 예시: 보험 앱 오류, 갱신·청구·지급 지연, 고객센터 대기와 상담 품질 문제의 원인 비교 및 개선안"
+        )
     if question:
         st.session_state.voc_chat_history.append({
             "role": "user", "content": question, "meta": f"사용자 · {_local_time_text()}"
@@ -1647,7 +1656,10 @@ def _render_voc_chat_conversation() -> None:
 
 
 def render_voc_chat() -> None:
-    _section("VOC 챗봇", "질문마다 A~D 모델 프로필을 선택하고 7단계 처리 결과와 100점 품질 현황을 확인합니다.")
+    _section(
+        "VOC 챗봇",
+        "보험 서비스 고객불만 50건에서 관련 사례를 검색·요약하고 문제 원인, 고객 영향과 정책 개선안을 분석합니다. 질문마다 A~D 모델 프로필의 7단계 처리 결과와 100점 품질평가를 확인합니다.",
+    )
     tab_chat, tab_log, tab_quality, tab_breakdown, tab_detail = st.tabs(
         ["챗봇과 대화", "대화 로그", "품질 현황", "유형별 비교", "대화별 채점 상세"]
     )

@@ -32,6 +32,17 @@ def test_ai_and_voc_chat_panels_emphasize_input_and_show_typing_state():
     assert "<div class='chat-input-guide'>VOC 메시지 입력</div>" in VIEWS
 
 
+def test_ai_and_voc_chat_explain_scope_and_show_question_examples():
+    ai_section = VIEWS[VIEWS.index("def render_ai_chat"):VIEWS.index("def _render_profile_cards")]
+    voc_section = VIEWS[VIEWS.index("def _render_voc_chat_conversation"):VIEWS.index("def render_monitoring")]
+    assert "AI 기반 SW 테스터 및 품질관리 실무 과정의 교육시간" in ai_section
+    assert "API·규칙 기반 답변과 품질평가를 비교합니다" in ai_section
+    assert ai_section.index('key="ai_chat_input"') < ai_section.index("질문 예시: 총 교육시간")
+    assert "보험 서비스 고객불만 50건에서 관련 사례를 검색·요약" in voc_section
+    assert "A~D 모델 프로필의 7단계 처리 결과와 100점 품질평가" in voc_section
+    assert voc_section.index('key="voc_chat_input"') < voc_section.index("질문 예시: 보험 앱 오류")
+
+
 def test_live_and_batch_quality_charts_share_grouped_pagination():
     assert "def _render_grouped_quality_chart" in VIEWS
     assert 'barmode="group"' in VIEWS
