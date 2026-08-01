@@ -23,7 +23,12 @@ def test_gpt_uses_signed_mantle_responses_endpoint(monkeypatch):
 
         @staticmethod
         def json():
-            return {"output": [{"content": [{"type": "output_text", "text": "응답"}]}]}
+            return {
+                "output": [
+                    {"content": [{"type": "reasoning_text", "text": "내부 추론"}]},
+                    {"content": [{"type": "output_text", "text": "응답"}]},
+                ]
+            }
 
     def fake_post(url, *, content, headers, timeout):
         captured.update(url=url, content=content, headers=headers, timeout=timeout)

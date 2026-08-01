@@ -92,6 +92,8 @@ def _extract_mantle_text(payload: dict[str, Any]) -> str:
         for content in output.get("content", []):
             if not isinstance(content, dict):
                 continue
+            if content.get("type") not in {None, "output_text"}:
+                continue
             text = content.get("text")
             if isinstance(text, str) and text:
                 parts.append(text)
