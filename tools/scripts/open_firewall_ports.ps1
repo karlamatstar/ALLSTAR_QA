@@ -3,10 +3,10 @@
 # 접속할 수 있도록 인바운드 방화벽 규칙을 추가합니다.
 
 $rules = @(
-    @{ Name = "AI-Portfolio-API-8000";        Port = 8000 },
-    @{ Name = "AI-Portfolio-Streamlit-8501";  Port = 8501 },
-    @{ Name = "AI-Portfolio-Prometheus-9090"; Port = 9090 },
-    @{ Name = "AI-Portfolio-Grafana-3000";    Port = 3000 }
+    @{ Name = "ALLSTAR-API-8000";        Port = 8000 },
+    @{ Name = "ALLSTAR-Streamlit-8501";  Port = 8501 },
+    @{ Name = "ALLSTAR-Prometheus-9090"; Port = 9090 },
+    @{ Name = "ALLSTAR-Grafana-3000";    Port = 3000 }
 )
 
 foreach ($rule in $rules) {
