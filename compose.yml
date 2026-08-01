@@ -8,8 +8,8 @@ x-voc-common: &voc-common
     AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-ap-northeast-2}
     BEDROCK_RUNTIME_REGION: ${BEDROCK_RUNTIME_REGION:-ap-northeast-2}
     BEDROCK_MANTLE_REGION: ${BEDROCK_MANTLE_REGION:-us-west-2}
-    VOC_OPENAI_GENERATION_MODEL: ${VOC_OPENAI_GENERATION_MODEL:-openai.gpt-5.6-luna}
-    VOC_OPENAI_JUDGE_MODEL: ${VOC_OPENAI_JUDGE_MODEL:-openai.gpt-5.6-terra}
+    VOC_OPENAI_GENERATION_MODEL: ${VOC_OPENAI_GENERATION_MODEL:-openai.gpt-oss-20b}
+    VOC_OPENAI_JUDGE_MODEL: ${VOC_OPENAI_JUDGE_MODEL:-openai.gpt-oss-120b}
     VOC_ANTHROPIC_GENERATION_MODEL: ${VOC_ANTHROPIC_GENERATION_MODEL:-global.anthropic.claude-sonnet-4-6}
     VOC_ANTHROPIC_JUDGE_MODEL: ${VOC_ANTHROPIC_JUDGE_MODEL:-global.anthropic.claude-sonnet-5}
     VOC_OPENAI_GENERATION_REASONING: ${VOC_OPENAI_GENERATION_REASONING:-none}
@@ -40,8 +40,8 @@ services:
       AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-ap-northeast-2}
       BEDROCK_RUNTIME_REGION: ${BEDROCK_RUNTIME_REGION:-ap-northeast-2}
       BEDROCK_MANTLE_REGION: ${BEDROCK_MANTLE_REGION:-us-west-2}
-      AI_CHAT_MODEL: ${AI_CHAT_MODEL:-openai.gpt-5.6-luna}
-      AI_JUDGE_MODEL: ${AI_JUDGE_MODEL:-openai.gpt-5.6-terra}
+      AI_CHAT_MODEL: ${AI_CHAT_MODEL:-openai.gpt-oss-20b}
+      AI_JUDGE_MODEL: ${AI_JUDGE_MODEL:-openai.gpt-oss-120b}
       ALLSTAR_OUTPUT_ROOT: /srv/app/_OUTPUT
     volumes:
       - ./_OUTPUT:/srv/app/_OUTPUT
@@ -60,7 +60,7 @@ services:
       K6_PROMETHEUS_RW_TREND_STATS: p(95),p(99),avg,min,max
       K6_RESULTS_DIR: /srv/app/_OUTPUT/logs/qa/k6
       K6_EXECUTION_LOCATION: K6 전용 컨테이너
-      AI_CHAT_MODEL: ${AI_CHAT_MODEL:-openai.gpt-5.6-luna}
+      AI_CHAT_MODEL: ${AI_CHAT_MODEL:-openai.gpt-oss-20b}
       TZ: Asia/Seoul
       ALLSTAR_PROJECT_ROOT: /srv/app
       ALLSTAR_OUTPUT_ROOT: /srv/app/_OUTPUT

@@ -112,7 +112,8 @@ class BedrockGPT:
 
     @property
     def endpoint(self) -> str:
-        return f"https://bedrock-mantle.{self.region}.api.aws/openai/v1/responses"
+        path = "openai/v1/responses" if self.model.startswith("openai.gpt-5.") else "v1/responses"
+        return f"https://bedrock-mantle.{self.region}.api.aws/{path}"
 
     def _payload(
         self,

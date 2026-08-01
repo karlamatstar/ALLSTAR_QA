@@ -80,7 +80,7 @@ def test_report_uses_explicit_phase_tags_instead_of_time_windows(tmp_path):
 
     assert "단계별 독립 실행" in report
     assert "Amazon Bedrock Mantle" in report
-    assert "openai.gpt-5.6-luna" in report
+    assert "openai.gpt-oss-20b" in report
     assert "**1단계 (1명 동시접속)**: 100.0 ms / 완료 요청 1건" in report
     assert "**2단계 (10명 동시접속)**: 250.0 ms / 완료 요청 2건" in report
     assert "**3단계 (25명 동시접속)**: 500.0 ms / 완료 요청 3건" in report

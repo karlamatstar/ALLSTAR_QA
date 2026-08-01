@@ -197,7 +197,7 @@ def make_judge_llm():
             ))
         elif provider == "openai":
             from allstar.voc.llm.openai_chat import OpenAIChat
-            default_model = os.environ.get("OPENAI_MODEL", "openai.gpt-5.6-luna")
+            default_model = os.environ.get("OPENAI_MODEL", "openai.gpt-oss-20b")
             model = (
                 os.environ.get("JUDGE_OPENAI_MODEL", default_model)
                 if locked
@@ -314,7 +314,7 @@ async def _run_judge(cases: list[dict], run_log: JudgeRunLog) -> int:
     experiment = os.environ.get("CROSS_VALIDATION_EXPERIMENT", "")
     generation_provider = os.environ.get("GENERATION_PROVIDER", "")
     generation_model = (
-        os.environ.get("OPENAI_MODEL", "openai.gpt-5.6-luna")
+        os.environ.get("OPENAI_MODEL", "openai.gpt-oss-20b")
         if generation_provider == "openai"
         else os.environ.get("A2A_MODEL_POLICY", "global.anthropic.claude-sonnet-5")
         if generation_provider == "anthropic"

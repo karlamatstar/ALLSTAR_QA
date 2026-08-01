@@ -120,8 +120,8 @@ sudo chmod 600 /etc/allstar/allstar.env /etc/allstar/duckdns.env
 
 - `BEDROCK_RUNTIME_REGION=ap-northeast-2`
 - `BEDROCK_MANTLE_REGION=us-west-2`
-- `AI_CHAT_MODEL=openai.gpt-5.6-luna`
-- `AI_JUDGE_MODEL=openai.gpt-5.6-terra`
+- `AI_CHAT_MODEL=openai.gpt-oss-20b`
+- `AI_JUDGE_MODEL=openai.gpt-oss-120b`
 - VOC A~D 역할별 GPT·Claude 모델 ID
 
 내부 토큰과 Grafana 암호는 예를 들어 EC2에서 다음처럼 생성한다.

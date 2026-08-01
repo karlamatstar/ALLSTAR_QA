@@ -11,8 +11,8 @@ JUDGMENT_LOG_DIR.mkdir(parents=True, exist_ok=True)
 
 load_dotenv(PROJECT_ROOT / ".env")
 
-AI_CHAT_MODEL = os.getenv("AI_CHAT_MODEL", "openai.gpt-5.6-luna")
-AI_JUDGE_MODEL = os.getenv("AI_JUDGE_MODEL", "openai.gpt-5.6-terra")
+AI_CHAT_MODEL = os.getenv("AI_CHAT_MODEL", "openai.gpt-oss-20b")
+AI_JUDGE_MODEL = os.getenv("AI_JUDGE_MODEL", "openai.gpt-oss-120b")
 # 기존 보고서·화면 코드와의 호환 이름입니다.
 OPENAI_MODEL = AI_CHAT_MODEL
 

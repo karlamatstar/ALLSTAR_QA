@@ -12,7 +12,7 @@ load_env()
 
 MODEL_SUMMARY = os.environ.get(
     "OPENAI_MODEL",
-    os.environ.get("A2A_MODEL_SUMMARY", "openai.gpt-5.6-luna"),
+    os.environ.get("A2A_MODEL_SUMMARY", "openai.gpt-oss-20b"),
 )
 MODEL_POLICY = os.environ.get(
     "A2A_MODEL_POLICY",

@@ -11,7 +11,7 @@ def test_health_and_profiles_are_public():
     assert client.get("/health").json()["status"] == "ok"
     profiles = client.get("/profiles").json()
     assert [row["profile_id"] for row in profiles] == ["A", "B", "C", "D"]
-    assert profiles[0]["generation"]["model"] == "openai.gpt-5.6-luna"
+    assert profiles[0]["generation"]["model"] == "openai.gpt-oss-20b"
     assert profiles[0]["judge"]["model"] == "global.anthropic.claude-sonnet-5"
 
 

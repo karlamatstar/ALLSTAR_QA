@@ -31,12 +31,12 @@ def _models() -> dict[str, ModelSpec]:
     return {
         "openai_generation": ModelSpec(
             "openai",
-            os.getenv("VOC_OPENAI_GENERATION_MODEL", "openai.gpt-5.6-luna"),
+            os.getenv("VOC_OPENAI_GENERATION_MODEL", "openai.gpt-oss-20b"),
             os.getenv("VOC_OPENAI_GENERATION_REASONING", "none"),
         ),
         "openai_judge": ModelSpec(
             "openai",
-            os.getenv("VOC_OPENAI_JUDGE_MODEL", "openai.gpt-5.6-terra"),
+            os.getenv("VOC_OPENAI_JUDGE_MODEL", "openai.gpt-oss-120b"),
             os.getenv("VOC_OPENAI_JUDGE_REASONING", "low"),
         ),
         "anthropic_generation": ModelSpec(

@@ -5,8 +5,8 @@ from allstar.shared import bedrock
 
 
 def test_model_ids_are_normalized_for_each_bedrock_surface():
-    assert bedrock.normalize_gpt_model("gpt-5.6-luna") == "openai.gpt-5.6-luna"
-    assert bedrock.normalize_gpt_model("openai.gpt-5.6-terra") == "openai.gpt-5.6-terra"
+    assert bedrock.normalize_gpt_model("gpt-oss-20b") == "openai.gpt-oss-20b"
+    assert bedrock.normalize_gpt_model("openai.gpt-oss-120b") == "openai.gpt-oss-120b"
     assert (
         bedrock.normalize_claude_model("claude-sonnet-4-6")
         == "global.anthropic.claude-sonnet-4-6"
@@ -32,17 +32,22 @@ def test_gpt_uses_signed_mantle_responses_endpoint(monkeypatch):
     monkeypatch.setattr(bedrock, "_signed_headers", lambda *_args: {"Authorization": "signed"})
     monkeypatch.setattr(bedrock.httpx, "post", fake_post)
 
-    result = bedrock.BedrockGPT("gpt-5.6-luna", region="us-west-2").generate(
+    result = bedrock.BedrockGPT("gpt-oss-20b", region="us-west-2").generate(
         "질문", max_tokens=123, reasoning="none"
     )
 
     payload = json.loads(captured["content"])
-    assert captured["url"] == "https://bedrock-mantle.us-west-2.api.aws/openai/v1/responses"
+    assert captured["url"] == "https://bedrock-mantle.us-west-2.api.aws/v1/responses"
     assert captured["headers"]["Authorization"] == "signed"
-    assert payload["model"] == "openai.gpt-5.6-luna"
+    assert payload["model"] == "openai.gpt-oss-20b"
     assert payload["store"] is False
     assert "reasoning" not in payload
     assert result == "응답"
+
+
+def test_gpt_5_models_use_their_dedicated_openai_path():
+    client = bedrock.BedrockGPT("openai.gpt-5.6-luna", region="us-west-2")
+    assert client.endpoint == "https://bedrock-mantle.us-west-2.api.aws/openai/v1/responses"
 
 
 def test_claude_uses_seoul_runtime_and_global_model(monkeypatch):

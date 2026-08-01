@@ -35,7 +35,7 @@ def make_generation_chat(default_provider: str, model: str | None = None, execut
         from allstar.voc.llm.openai_chat import OpenAIChat
 
         return OpenAIChat(
-            model=requested_model or os.environ.get("OPENAI_MODEL", "openai.gpt-5.6-luna"),
+            model=requested_model or os.environ.get("OPENAI_MODEL", "openai.gpt-oss-20b"),
             max_attempts=attempts,
             reasoning_effort=reasoning or os.environ.get("OPENAI_REASONING_EFFORT", "none"),
         )

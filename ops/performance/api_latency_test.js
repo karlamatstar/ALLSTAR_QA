@@ -6,7 +6,7 @@ const TARGET_IP = __ENV.TARGET_IP || '127.0.0.1:8000';
 const BASE_URL = `http://${TARGET_IP}`;
 const PHASE_ID = __ENV.PHASE_ID || 'phase1';
 const PHASE_VUS = Math.max(1, parseInt(__ENV.PHASE_VUS || '1', 10));
-const AI_CHAT_MODEL = __ENV.AI_CHAT_MODEL || 'openai.gpt-5.6-luna';
+const AI_CHAT_MODEL = __ENV.AI_CHAT_MODEL || 'openai.gpt-oss-20b';
 
 // 커스텀 지표
 const llmLatency = new Trend('llm_latency');

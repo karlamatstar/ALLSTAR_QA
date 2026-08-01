@@ -196,7 +196,7 @@ def parse_and_generate_report(raw_json_path, report_dir, on_line=None):
 
     today = datetime.datetime.now()
     timestamp = today.strftime("%Y-%m-%d %H:%M:%S")
-    llm_model = os.environ.get("AI_CHAT_MODEL", "openai.gpt-5.6-luna")
+    llm_model = os.environ.get("AI_CHAT_MODEL", "openai.gpt-oss-20b")
 
     md_content = f"""# API 종합 성능 및 신뢰성 분석 보고서
 

@@ -19,7 +19,7 @@ class OpenAIChat:
         reasoning_effort: str | None = None,
         verbosity: str | None = None,
     ):
-        self.model = model or os.environ.get("OPENAI_MODEL", "openai.gpt-5.6-luna")
+        self.model = model or os.environ.get("OPENAI_MODEL", "openai.gpt-oss-20b")
         self.max_attempts = max_attempts or int(os.environ.get("LLM_MAX_ATTEMPTS", "3"))
         self.reasoning_effort = reasoning_effort or os.environ.get("OPENAI_REASONING_EFFORT", "none")
         self.verbosity = verbosity or os.environ.get("OPENAI_VERBOSITY", "low")
