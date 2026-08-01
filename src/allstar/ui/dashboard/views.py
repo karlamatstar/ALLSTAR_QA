@@ -1012,7 +1012,7 @@ def _render_ai_fault_test_password_gate() -> None:
 
 
 def render_ai_chat() -> None:
-    _section("AI 에이전트 챗봇", "기존 포트폴리오의 실시간 대화·로그·품질 분석 기능을 통합한 화면입니다.")
+    _section("AI 에이전트 챗봇", "실시간 대화·로그·품질 분석 기능을 통합한 화면입니다.")
     tab_chat, tab_log, tab_quality, tab_breakdown, tab_detail = st.tabs(
         ["챗봇과 대화", "대화 로그", "품질 현황", "유형별 비교", "대화별 채점 상세"]
     )
@@ -2518,7 +2518,7 @@ def _render_ai_case_execution() -> None:
 
 
 def render_ai_testcases() -> None:
-    _section("AI 에이전트 테스트케이스", "기존 포트폴리오의 관리·전체 실행·품질 분석 기능을 유지합니다.")
+    _section("AI 에이전트 테스트케이스", "테스트케이스 관리·전체 실행·품질 분석 기능을 제공합니다.")
     tab_manage, tab_run, tab_batch, tab_breakdown, tab_detail = st.tabs(
         ["테스트케이스 관리", "테스트케이스 실행", "배치 품질 현황", "유형별 비교", "케이스 상세"]
     )

@@ -62,7 +62,7 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="AI Agent Quality Portfolio", lifespan=lifespan)
+app = FastAPI(title="AI Agent Quality Platform", lifespan=lifespan)
 app.mount("/metrics", metrics_app)
 REPORT_ROOT.mkdir(parents=True, exist_ok=True)
 app.mount("/reports", StaticFiles(directory=str(REPORT_ROOT)), name="reports")

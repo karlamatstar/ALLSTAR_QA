@@ -48,7 +48,7 @@ FIRST_START_GUIDANCE = (
 
 SERVICES = [
     ("컨테이너 실행 환경 (Docker Desktop)", "docker-desktop", None, None, "system"),
-    ("AI 상담 서버 (Portfolio API)", "portfolio-api", 8000, "http://localhost:8000/docs", "docker"),
+    ("AI 상담 서버 (AI API)", "portfolio-api", 8000, "http://localhost:8000/docs", "docker"),
     ("부하 시험 실행기 (K6 Runner)", "k6-runner", 8200, "http://localhost:8200/docs", "docker"),
     ("통합 화면 (Streamlit)", "streamlit", 8501, "http://localhost:8501", "docker"),
     ("고객 의견 분석 서버 (VOC API)", "voc-api", 8100, "http://localhost:8100/docs", "docker"),

@@ -13,7 +13,7 @@ def read(relative_path: str) -> str:
 def test_server_control_uses_korean_first_labels_without_changing_service_ids():
     source = read("tools/server_control/main.py")
 
-    assert "AI 상담 서버 (Portfolio API)" in source
+    assert "AI 상담 서버 (AI API)" in source
     assert "통합 화면 (Streamlit)" in source
     assert "질문 의도 분석 (Interpreter)" in source
     assert "운영 상태 화면 (Grafana)" in source

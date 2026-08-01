@@ -99,7 +99,7 @@ VOC 테스트케이스 보고서는 `교차 테스트 (A)`부터 `교차 테스�
 - 직접 부하 K6 5종은 원문 로그와 Prometheus·Grafana 지표를 남기고 별도 사용자용 보고서는 만들지 않음
 - 장애·기능 검증과 서버 연결 성능 종합 시험의 정식 보고서는 유지
 
-통합 Streamlit은 Docker 컨테이너에서 실행하고 K6는 별도 전용 컨테이너의 Linux K6 2.1.0으로 실행한다. Windows QA 컨트롤러는 기존처럼 Windows에 설치된 K6를 사용한다. 로컬 Docker Desktop만으로도 전체 기능이 동작하며, 외부 포트폴리오 공개가 필요할 때는 별도 AWS Compose와 Caddy 구성을 사용한다.
+통합 Streamlit은 Docker 컨테이너에서 실행하고 K6는 별도 전용 컨테이너의 Linux K6 2.1.0으로 실행한다. Windows QA 컨트롤러는 기존처럼 Windows에 설치된 K6를 사용한다. 로컬 Docker Desktop만으로도 전체 기능이 동작하며, 외부 공개가 필요할 때는 별도 AWS Compose와 Caddy 구성을 사용한다.
 
 ### AI 에이전트 테스트케이스
 
