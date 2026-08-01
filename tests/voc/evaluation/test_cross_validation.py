@@ -9,10 +9,10 @@ def test_experiment_matrix_has_four_fixed_groups():
     from allstar.voc.evaluation.cross_validation import EXPERIMENTS
 
     assert EXPERIMENTS == {
-        "A": {"generation": "openai", "judge": "deepseek", "purpose": "기본 교차 품질검증"},
-        "B": {"generation": "deepseek", "judge": "openai", "purpose": "모델 역할 변경 검증"},
+        "A": {"generation": "openai", "judge": "anthropic", "purpose": "기본 교차 품질검증"},
+        "B": {"generation": "anthropic", "judge": "openai", "purpose": "모델 역할 변경 검증"},
         "C": {"generation": "openai", "judge": "openai", "purpose": "OpenAI 동일 모델 평가 비교"},
-        "D": {"generation": "deepseek", "judge": "deepseek", "purpose": "DeepSeek 동일 모델 평가 비교"},
+        "D": {"generation": "anthropic", "judge": "anthropic", "purpose": "Anthropic 동일 모델 평가 비교"},
     }
 
 
@@ -28,7 +28,7 @@ def test_locked_environment_disables_retry_and_fallback(monkeypatch):
 
     monkeypatch.setenv("SENTINEL", "kept")
     env = build_locked_environment("B")
-    assert env["GENERATION_PROVIDER"] == "deepseek"
+    assert env["GENERATION_PROVIDER"] == "anthropic"
     assert env["JUDGE_PROVIDER"] == "openai"
     assert env["JUDGE_LOCK_PROVIDER"] == "1"
     assert env["LLM_MAX_ATTEMPTS"] == "1"

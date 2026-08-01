@@ -39,15 +39,23 @@ def _models() -> dict[str, ModelSpec]:
             os.getenv("VOC_OPENAI_JUDGE_MODEL", "openai.gpt-oss-120b"),
             os.getenv("VOC_OPENAI_JUDGE_REASONING", "low"),
         ),
-        "deepseek_generation": ModelSpec(
-            "deepseek",
-            os.getenv("VOC_DEEPSEEK_GENERATION_MODEL", "deepseek.v3.1"),
-            "none",
+        "anthropic_generation": ModelSpec(
+            "anthropic",
+            os.getenv(
+                "VOC_ANTHROPIC_GENERATION_MODEL",
+                "global.anthropic.claude-haiku-4-5-20251001-v1:0",
+            ),
+            os.getenv("VOC_ANTHROPIC_GENERATION_EFFORT", "none"),
+            os.getenv("VOC_ANTHROPIC_THINKING", "disabled"),
         ),
-        "deepseek_judge": ModelSpec(
-            "deepseek",
-            os.getenv("VOC_DEEPSEEK_JUDGE_MODEL", "deepseek.v3.2"),
-            "none",
+        "anthropic_judge": ModelSpec(
+            "anthropic",
+            os.getenv(
+                "VOC_ANTHROPIC_JUDGE_MODEL",
+                "global.anthropic.claude-haiku-4-5-20251001-v1:0",
+            ),
+            os.getenv("VOC_ANTHROPIC_JUDGE_EFFORT", "none"),
+            os.getenv("VOC_ANTHROPIC_THINKING", "disabled"),
         ),
     }
 
@@ -56,20 +64,20 @@ def profiles() -> dict[str, ModelProfile]:
     model = _models()
     return {
         "A": ModelProfile(
-            "A", "기본 권장", "OpenAI가 답변을 만들고 DeepSeek이 독립 평가",
-            model["openai_generation"], model["deepseek_judge"], True,
+            "A", "기본 권장", "OpenAI가 답변을 만들고 Claude Haiku 4.5가 독립 평가",
+            model["openai_generation"], model["anthropic_judge"], True,
         ),
         "B": ModelProfile(
-            "B", "역방향 교차 평가", "DeepSeek이 답변을 만들고 OpenAI가 독립 평가",
-            model["deepseek_generation"], model["openai_judge"],
+            "B", "역방향 교차 평가", "Claude Haiku 4.5가 답변을 만들고 OpenAI가 독립 평가",
+            model["anthropic_generation"], model["openai_judge"],
         ),
         "C": ModelProfile(
             "C", "OpenAI 계열 비교", "OpenAI 안에서 생성 모델과 평가 모델을 분리",
             model["openai_generation"], model["openai_judge"],
         ),
         "D": ModelProfile(
-            "D", "DeepSeek 계열 비교", "DeepSeek 안에서 생성 모델과 평가 모델을 분리",
-            model["deepseek_generation"], model["deepseek_judge"],
+            "D", "Anthropic 기준 비교", "Claude Haiku 4.5가 답변 생성과 품질 평가를 모두 수행",
+            model["anthropic_generation"], model["anthropic_judge"],
         ),
     }
 

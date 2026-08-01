@@ -20,7 +20,7 @@ def generation_provider(default_provider: str, execution=None) -> str:
         "provider",
         os.environ.get("GENERATION_PROVIDER", default_provider),
     ).lower()
-    if provider not in {"openai", "deepseek", "anthropic"}:
+    if provider not in {"openai", "anthropic"}:
         raise ValueError(f"지원하지 않는 생성 제공자: {provider}")
     return provider
 
@@ -40,22 +40,14 @@ def make_generation_chat(default_provider: str, model: str | None = None, execut
             reasoning_effort=reasoning or os.environ.get("OPENAI_REASONING_EFFORT", "none"),
         )
 
-    if provider == "deepseek":
-        from allstar.voc.llm.deepseek_chat import DeepSeekChat
-
-        return DeepSeekChat(
-            model=requested_model or os.environ.get("DEEPSEEK_MODEL", "deepseek.v3.1"),
-            max_attempts=attempts,
-        )
-
     from allstar.voc.llm.anthropic_chat import AnthropicChat
 
     return AnthropicChat(
         model=requested_model or os.environ.get(
-            "A2A_MODEL_POLICY", "global.anthropic.claude-sonnet-5"
+            "A2A_MODEL_POLICY", "global.anthropic.claude-haiku-4-5-20251001-v1:0"
         ),
         fallback_to_openai=None,
-        effort=reasoning or os.environ.get("ANTHROPIC_EFFORT_POLICY", "low"),
+        effort=reasoning or os.environ.get("ANTHROPIC_EFFORT_POLICY", "none"),
         thinking=thinking,
         max_attempts=attempts,
     )

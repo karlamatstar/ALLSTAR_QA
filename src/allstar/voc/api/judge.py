@@ -51,12 +51,6 @@ async def evaluate(
             verbosity="low",
             max_tokens=2200,
         )
-    elif spec.provider == "deepseek":
-        from allstar.shared.bedrock import BedrockChatCompletions
-
-        text = await BedrockChatCompletions(
-            spec.model, provider="deepseek"
-        ).generate_async(prompt, max_tokens=2200)
     elif spec.provider == "anthropic":
         from allstar.shared.bedrock import BedrockClaude
 

@@ -111,7 +111,7 @@ class PolicyImproverAgent:
         # ============ LLM 래퍼를 통한 API 호출 ============
         # 실행 프로필의 생성 모델로 정책 개선안을 생성합니다
         text = await make_generation_chat(
-            "deepseek", model=self.model, execution=execution
+            "anthropic", model=self.model, execution=execution
         )(prompt.strip(), max_tokens=max_tokens)
 
         # ============ 결과 검증 ============
@@ -178,7 +178,7 @@ class PolicyImproverAgent:
         # ============ LLM 래퍼를 통한 API 호출 ============
         # 실행 프로필의 생성 모델로 정책 개선안을 개선합니다
         text = await make_generation_chat(
-            "deepseek", model=self.model, execution=execution
+            "anthropic", model=self.model, execution=execution
         )(prompt.strip(), max_tokens=1024)
 
         # ============ 결과 검증 ============

@@ -31,7 +31,7 @@ service Improver {
 
 // ===== Messages =====
 message ModelExecutionConfig {
-  string provider         = 1; // openai | deepseek | anthropic
+  string provider         = 1; // openai | anthropic
   string model            = 2;
   string reasoning        = 3; // OpenAI reasoning 또는 Anthropic effort
   string thinking         = 4; // disabled 등

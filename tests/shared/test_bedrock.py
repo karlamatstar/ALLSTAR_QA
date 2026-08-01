@@ -8,8 +8,8 @@ def test_model_ids_are_normalized_for_each_bedrock_surface():
     assert bedrock.normalize_gpt_model("gpt-oss-20b") == "openai.gpt-oss-20b"
     assert bedrock.normalize_gpt_model("openai.gpt-oss-120b") == "openai.gpt-oss-120b"
     assert (
-        bedrock.normalize_claude_model("claude-sonnet-4-6")
-        == "global.anthropic.claude-sonnet-4-6"
+        bedrock.normalize_claude_model("claude-haiku-4-5-20251001-v1:0")
+        == "global.anthropic.claude-haiku-4-5-20251001-v1:0"
     )
 
 
@@ -55,36 +55,6 @@ def test_gpt_5_models_use_their_dedicated_openai_path():
     assert client.endpoint == "https://bedrock-mantle.us-west-2.api.aws/openai/v1/responses"
 
 
-def test_deepseek_uses_signed_chat_completions_endpoint(monkeypatch):
-    captured = {}
-
-    class FakeResponse:
-        @staticmethod
-        def raise_for_status():
-            return None
-
-        @staticmethod
-        def json():
-            return {"choices": [{"message": {"content": "평가"}}]}
-
-    def fake_post(url, *, content, headers, timeout):
-        captured.update(url=url, content=content, headers=headers, timeout=timeout)
-        return FakeResponse()
-
-    monkeypatch.setattr(bedrock, "_signed_headers", lambda *_args: {"Authorization": "signed"})
-    monkeypatch.setattr(bedrock.httpx, "post", fake_post)
-
-    result = bedrock.BedrockChatCompletions(
-        "v3.2", provider="deepseek", region="us-west-2"
-    ).generate("채점", max_tokens=321)
-
-    payload = json.loads(captured["content"])
-    assert captured["url"] == "https://bedrock-mantle.us-west-2.api.aws/v1/chat/completions"
-    assert payload["model"] == "deepseek.v3.2"
-    assert payload["max_completion_tokens"] == 321
-    assert result == "평가"
-
-
 def test_claude_uses_seoul_runtime_and_global_model(monkeypatch):
     captured = {}
 
@@ -101,14 +71,14 @@ def test_claude_uses_seoul_runtime_and_global_model(monkeypatch):
     monkeypatch.setattr(bedrock.boto3, "client", fake_client)
 
     result = bedrock.BedrockClaude(
-        "claude-sonnet-5", region="ap-northeast-2"
-    ).generate("채점", max_tokens=321, effort="low", thinking="disabled")
+        "claude-haiku-4-5-20251001-v1:0", region="ap-northeast-2"
+    ).generate("채점", max_tokens=321, effort="none", thinking="disabled")
 
     payload = json.loads(captured["body"])
     assert captured["service_name"] == "bedrock-runtime"
     assert captured["region_name"] == "ap-northeast-2"
-    assert captured["modelId"] == "global.anthropic.claude-sonnet-5"
+    assert captured["modelId"] == "global.anthropic.claude-haiku-4-5-20251001-v1:0"
     assert payload["max_tokens"] == 321
-    assert payload["output_config"] == {"effort": "low"}
+    assert "output_config" not in payload
     assert payload["thinking"] == {"type": "disabled"}
     assert result == "평가"

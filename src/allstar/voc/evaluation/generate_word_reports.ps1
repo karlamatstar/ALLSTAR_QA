@@ -19,6 +19,11 @@ foreach ($path in @($judgeLog, $pytestLog, $judgeCsv, $scoreMd, $casesJson)) {
 
 $judge = Get-Content -LiteralPath $judgeLog -Raw -Encoding UTF8 | ConvertFrom-Json
 $pytest = Get-Content -LiteralPath $pytestLog -Raw -Encoding UTF8 | ConvertFrom-Json
+$judgeModelLabel = if ($judge.configured_models) {
+    [string]$judge.configured_models
+} else {
+    "anthropic:global.anthropic.claude-haiku-4-5-20251001-v1:0"
+}
 $rows = @(Import-Csv -LiteralPath $judgeCsv -Encoding UTF8)
 $caseDefs = (Get-Content -LiteralPath $casesJson -Raw -Encoding UTF8 | ConvertFrom-Json).cases
 
@@ -389,7 +394,7 @@ $(HtmlTable @('테스트','상태','수행시간(초)') $slowRows)
 <td><div class='knum'>$($judge.case_counts.na)</div><div class='klabel'>API 실패 N/A</div></td>
 <td><div class='knum'>2</div><div class='klabel'>pytest 전용 TC-19·20</div></td>
 </tr></table>
-<p>Judge는 $(ConvertTo-HtmlText $judge.started_at)부터 $(ConvertTo-HtmlText $judge.finished_at)까지 $judgeDurationText 동안 실행됐다. 20개 중 TC-01~16은 실제 분석 결과를 100점으로 채점했고, TC-17·18은 CSV에 없는 주제를 정확히 0건으로 판정해 <b>데이터 없음 PASS</b>로 평균에서 제외했다. TC-19는 Retriever 중단 시 명확한 오류 표시, TC-20은 CSV 누락 시 데이터 파일 오류 안내를 검증하는 <b>pytest 전용 장애 케이스</b>라 LLM 채점 대상에서 제외했다. 우선 Judge는 <b>anthropic:claude-sonnet-5</b>를 사용했으며, 16개 채점 사례는 모두 <b>anthropic:성공</b>으로 기록되어 API 재시도 실패에 따른 N/A는 없었다.</p>
+<p>Judge는 $(ConvertTo-HtmlText $judge.started_at)부터 $(ConvertTo-HtmlText $judge.finished_at)까지 $judgeDurationText 동안 실행됐다. 20개 중 TC-01~16은 실제 분석 결과를 100점으로 채점했고, TC-17·18은 CSV에 없는 주제를 정확히 0건으로 판정해 <b>데이터 없음 PASS</b>로 평균에서 제외했다. TC-19는 Retriever 중단 시 명확한 오류 표시, TC-20은 CSV 누락 시 데이터 파일 오류 안내를 검증하는 <b>pytest 전용 장애 케이스</b>라 LLM 채점 대상에서 제외했다. 우선 Judge는 <b>$(ConvertTo-HtmlText $judgeModelLabel)</b>를 사용했으며, 16개 채점 사례는 모두 <b>anthropic:성공</b>으로 기록되어 API 재시도 실패에 따른 N/A는 없었다.</p>
 <div class='figure'><img src='$(FileUrl $verdictChart)'></div><div class='caption'>그림 3. 정식 채점 16건의 판정 분포</div>
 <div class='danger'>평균은 $average점이며 즉시 보류가 $($immediate.Count)건 발생했다. pytest 성공은 코드 구조와 정의된 동작의 안정성을 의미하지만, 생성된 분석 내용의 사실성·모호성 대응·위험 탐지까지 자동으로 보장하지는 않는다.</div>
 
@@ -450,7 +455,7 @@ $qualityHtml = @"
   <h2>20개 테스트 케이스 · 9개 평가 항목 · 독립 LLM Judge</h2>
   <div class='meta'>
     평가 기준일: $(ConvertTo-HtmlText $generatedAt)<br>
-    Judge 모델: anthropic:claude-sonnet-5<br>
+    Judge 모델: $(ConvertTo-HtmlText $judgeModelLabel)<br>
     활용 범위: 수업 실습 · 팀 비교 · 발표 자료
   </div>
 </div>
@@ -543,7 +548,7 @@ $(HtmlTable @('케이스','점수','발생 내용') $holdRows)
 $(if ($responseTimes.Count -gt 0) { "<div class='figure'><img src='$(FileUrl $responseChart)'></div><div class='caption'>그림 4. Judge 근거에서 응답시간이 명시된 사례</div>" })
 <p>응답시간이 명시된 사례 대부분이 약 96~126초 범위였으며, 단순하거나 모호한 문의도 100초 이상 소요됐다. 6개 에이전트가 순차적으로 외부 LLM을 호출하는 구조가 정확성 검증에는 도움이 되지만 시연 흐름에는 부담이 된다.</p>
 $(HtmlTable @('항목','결과','해석') @(
-@('Judge 우선 모델','anthropic:claude-sonnet-5','생성 모델과 분리된 독립 평가'),
+@('Judge 우선 모델',$judgeModelLabel,'생성 모델과 분리된 독립 평가'),
 @('대체 모델','openai:gpt-5.4-mini 구성','Anthropic 실패 시 대체 가능'),
 @('API 성공','채점 16건 모두 anthropic:성공','이번 실행에서 재시도 실패 없음'),
 @('N/A','0건','평균에서 제외할 API 장애 사례 없음'),

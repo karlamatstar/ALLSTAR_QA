@@ -4,7 +4,7 @@ from allstar.voc.protocol import voc_pb2
 def test_generation_profile_can_be_carried_by_pipeline_request():
     execution = voc_pb2.ModelExecutionConfig(
         provider="anthropic",
-        model="claude-sonnet-4-6",
+        model="global.anthropic.claude-haiku-4-5-20251001-v1:0",
         reasoning="low",
         thinking="disabled",
     )
@@ -16,5 +16,5 @@ def test_generation_profile_can_be_carried_by_pipeline_request():
         generation=execution,
     )
     assert request.generation.provider == "anthropic"
-    assert request.generation.model == "claude-sonnet-4-6"
+    assert request.generation.model == "global.anthropic.claude-haiku-4-5-20251001-v1:0"
     assert request.generation.thinking == "disabled"

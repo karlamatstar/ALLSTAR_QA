@@ -123,12 +123,12 @@ VOC 테스트케이스 보고서는 `교차 테스트 (A)`부터 `교차 테스�
 
 | 프로필 | 답변 생성 | 독립 품질평가(Judge) | 목적 |
 |---|---|---|---|
-| A | OpenAI `gpt-oss-20b` | DeepSeek `v3.2` | 기본 권장 교차 평가 |
-| B | DeepSeek `v3.1` | OpenAI `gpt-oss-120b` | 역방향 교차 평가 |
+| A | OpenAI `gpt-oss-20b` | Anthropic `Claude Haiku 4.5` | 기본 권장 교차 평가 |
+| B | Anthropic `Claude Haiku 4.5` | OpenAI `gpt-oss-120b` | 역방향 교차 평가 |
 | C | OpenAI `gpt-oss-20b` | OpenAI `gpt-oss-120b` | OpenAI 계열 역할 분리 |
-| D | DeepSeek `v3.1` | DeepSeek `v3.2` | DeepSeek 계열 역할 분리 |
+| D | Anthropic `Claude Haiku 4.5` | Anthropic `Claude Haiku 4.5` | Anthropic 단일 모델 기준 비교 |
 
-모든 모델은 오리건 리전의 Amazon Bedrock Mantle을 통해 호출한다. OpenAI 모델은 Responses API, DeepSeek 모델은 Chat Completions API를 사용한다. 선택 프로필, 생성 모델, Judge 모델과 설정은 질문·채점 로그와 보고서에 함께 기록한다. Judge를 사용할 수 없으면 답변 실패와 구분해 `N/A`로 남긴다.
+모든 모델은 Amazon Bedrock을 통해 호출한다. OpenAI 모델은 오리건 리전의 Bedrock Mantle Responses API를 사용하고, Claude Haiku 4.5는 서울 리전의 Bedrock Runtime과 글로벌 추론 프로필을 사용한다. 선택 프로필, 생성 모델, Judge 모델과 설정은 질문·채점 로그와 보고서에 함께 기록한다. Judge를 사용할 수 없으면 답변 실패와 구분해 `N/A`로 남긴다.
 
 ## 실행 전 준비
 

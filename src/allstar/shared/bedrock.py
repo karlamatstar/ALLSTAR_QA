@@ -50,12 +50,6 @@ def normalize_gpt_model(model: str) -> str:
     return value if value.startswith("openai.") else f"openai.{value}"
 
 
-def normalize_mantle_model(model: str, provider: str) -> str:
-    """Mantle 모델 ID가 이미 공급자 접두사를 가지면 그대로 사용한다."""
-    value = model.strip()
-    return value if value.startswith(f"{provider}.") else f"{provider}.{value}"
-
-
 def normalize_claude_model(model: str) -> str:
     value = model.strip()
     if value.startswith(("global.anthropic.", "anthropic.")):
@@ -106,17 +100,6 @@ def _extract_mantle_text(payload: dict[str, Any]) -> str:
     if parts:
         return "\n".join(parts)
     raise BedrockResponseError("Bedrock Mantle 응답에서 출력 텍스트를 찾지 못했습니다.")
-
-
-def _extract_chat_completion_text(payload: dict[str, Any]) -> str:
-    choices = payload.get("choices", [])
-    if choices and isinstance(choices[0], dict):
-        message = choices[0].get("message", {})
-        if isinstance(message, dict):
-            content = message.get("content")
-            if isinstance(content, str) and content.strip():
-                return content
-    raise BedrockResponseError("Bedrock Mantle Chat Completions 응답에서 출력 텍스트를 찾지 못했습니다.")
 
 
 @dataclass
@@ -191,59 +174,6 @@ class BedrockGPT:
         response.raise_for_status()
         return _extract_mantle_text(response.json()).strip()
 
-
-@dataclass
-class BedrockChatCompletions:
-    """Mantle Chat Completions API를 사용하는 OpenAI 이외 모델용 클라이언트."""
-
-    model: str
-    provider: str
-    region: str = ""
-    timeout_seconds: float = 30.0
-
-    def __post_init__(self) -> None:
-        self.model = normalize_mantle_model(self.model, self.provider)
-        self.region = self.region or mantle_region()
-
-    @property
-    def endpoint(self) -> str:
-        return f"https://bedrock-mantle.{self.region}.api.aws/v1/chat/completions"
-
-    def _payload(
-        self,
-        prompt: str,
-        max_tokens: int,
-    ) -> dict[str, Any]:
-        return {
-            "model": self.model,
-            "messages": [{"role": "user", "content": prompt}],
-            "max_completion_tokens": max_tokens,
-            "stream": False,
-        }
-
-    def generate(self, prompt: str, *, max_tokens: int = 900) -> str:
-        payload = self._payload(prompt, max_tokens)
-        body = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
-        response = httpx.post(
-            self.endpoint,
-            content=body,
-            headers=_signed_headers(self.endpoint, body, self.region),
-            timeout=self.timeout_seconds,
-        )
-        response.raise_for_status()
-        return _extract_chat_completion_text(response.json()).strip()
-
-    async def generate_async(self, prompt: str, *, max_tokens: int = 900) -> str:
-        payload = self._payload(prompt, max_tokens)
-        body = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
-        async with httpx.AsyncClient(timeout=self.timeout_seconds) as client:
-            response = await client.post(
-                self.endpoint,
-                content=body,
-                headers=_signed_headers(self.endpoint, body, self.region),
-            )
-        response.raise_for_status()
-        return _extract_chat_completion_text(response.json()).strip()
 
 @dataclass
 class BedrockClaude:

@@ -12,7 +12,7 @@ def test_health_and_profiles_are_public():
     profiles = client.get("/profiles").json()
     assert [row["profile_id"] for row in profiles] == ["A", "B", "C", "D"]
     assert profiles[0]["generation"]["model"] == "openai.gpt-oss-20b"
-    assert profiles[0]["judge"]["model"] == "deepseek.v3.2"
+    assert profiles[0]["judge"]["model"] == "global.anthropic.claude-haiku-4-5-20251001-v1:0"
 
 
 def test_chat_rejects_question_mark_only_encoding_damage():
@@ -51,7 +51,7 @@ def test_chat_job_records_selected_profile_without_real_api(monkeypatch, tmp_pat
     status = client.get(f"/chat/{request_id}/status").json()
     assert status["status"] == "completed"
     assert status["profile_id"] == "B"
-    assert status["profile"]["generation"]["provider"] == "deepseek"
+    assert status["profile"]["generation"]["provider"] == "anthropic"
     assert status["profile"]["judge"]["provider"] == "openai"
     assert status["judge"]["total"] == 88
     assert status["stage_states"][-1] == "done"

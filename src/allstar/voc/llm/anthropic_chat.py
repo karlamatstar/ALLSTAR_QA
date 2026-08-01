@@ -26,13 +26,13 @@ class AnthropicChat:
         max_attempts: int | None = None,
     ):
         self.model = model or os.environ.get(
-            "A2A_MODEL_POLICY", "global.anthropic.claude-sonnet-5"
+            "A2A_MODEL_POLICY", "global.anthropic.claude-haiku-4-5-20251001-v1:0"
         )
         if fallback_to_openai is None:
             fallback_to_openai = os.environ.get("LLM_ALLOW_FALLBACK", "true").lower() == "true"
         self.fallback_to_openai = fallback_to_openai
         self.max_attempts = max_attempts or int(os.environ.get("LLM_MAX_ATTEMPTS", "3"))
-        self.effort = (effort or os.environ.get("ANTHROPIC_EFFORT_POLICY", "low")).lower()
+        self.effort = (effort or os.environ.get("ANTHROPIC_EFFORT_POLICY", "none")).lower()
         self.thinking = (thinking or os.environ.get("ANTHROPIC_THINKING_POLICY", "disabled")).lower()
         self.client = BedrockClaude(
             model=self.model,
