@@ -37,7 +37,7 @@ def make_generation_chat(default_provider: str, model: str | None = None, execut
         return OpenAIChat(
             model=requested_model or os.environ.get("OPENAI_MODEL", "openai.gpt-oss-20b"),
             max_attempts=attempts,
-            reasoning_effort=reasoning or os.environ.get("OPENAI_REASONING_EFFORT", "none"),
+            reasoning_effort=reasoning or os.environ.get("OPENAI_REASONING_EFFORT", "low"),
         )
 
     from allstar.voc.llm.anthropic_chat import AnthropicChat

@@ -89,6 +89,25 @@ def test_mantle_completed_response_without_text_reports_status():
     assert caught.value.reason is None
 
 
+def test_reasoning_only_completed_response_at_requested_limit_is_token_exhaustion():
+    payload = {
+        "status": "completed",
+        "output": [
+            {"type": "reasoning", "content": [{"type": "reasoning_text", "text": "추론"}]}
+        ],
+        "usage": {
+            "output_tokens": 900,
+            "output_tokens_details": {"reasoning_tokens": 875},
+        },
+    }
+
+    with pytest.raises(bedrock.BedrockIncompleteResponseError) as caught:
+        bedrock._extract_mantle_text(payload, requested_max_tokens=900)
+
+    assert caught.value.status == "completed"
+    assert caught.value.reason == "max_output_tokens"
+
+
 def test_claude_uses_seoul_runtime_and_global_model(monkeypatch):
     captured = {}
 

@@ -58,7 +58,7 @@ def get_answer_from_api_agent(user_question: str) -> str:
                         {"role": "user",   "content": user_question},
                     ],
                     max_tokens=int(os.getenv("AI_CHAT_MAX_OUTPUT_TOKENS", "900")),
-                    reasoning=os.getenv("AI_CHAT_REASONING", "none"),
+                    reasoning=os.getenv("AI_CHAT_REASONING", "low"),
                 )
             break
         except Exception as error:

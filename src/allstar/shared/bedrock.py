@@ -97,7 +97,11 @@ def _signed_headers(url: str, body: bytes, region: str) -> dict[str, str]:
     return {str(key): str(value) for key, value in request.headers.items()}
 
 
-def _extract_mantle_text(payload: dict[str, Any]) -> str:
+def _extract_mantle_text(
+    payload: dict[str, Any],
+    *,
+    requested_max_tokens: int | None = None,
+) -> str:
     direct = payload.get("output_text")
     if isinstance(direct, str) and direct.strip():
         return direct
@@ -141,19 +145,33 @@ def _extract_mantle_text(payload: dict[str, Any]) -> str:
         if isinstance(usage.get("output_tokens_details"), dict)
         else {}
     )
+    output_tokens = usage.get("output_tokens")
+    response_limit = payload.get("max_output_tokens")
+    effective_limit = response_limit if isinstance(response_limit, int) else requested_max_tokens
+    reasoning_only = bool(output_types) and set(output_types) <= {"reasoning"}
+    token_limit_reached = (
+        isinstance(output_tokens, int)
+        and isinstance(effective_limit, int)
+        and output_tokens >= effective_limit
+    )
+    if reason is None and reasoning_only and token_limit_reached:
+        reason = "max_output_tokens"
+
     logger.warning(
         "Bedrock Mantle 텍스트 출력 없음: status=%s reason=%s "
-        "output_types=%s content_types=%s input_tokens=%s output_tokens=%s reasoning_tokens=%s",
+        "output_types=%s content_types=%s input_tokens=%s output_tokens=%s "
+        "reasoning_tokens=%s max_output_tokens=%s",
         status,
         reason or "none",
         output_types,
         content_types,
         usage.get("input_tokens"),
-        usage.get("output_tokens"),
+        output_tokens,
         output_details.get("reasoning_tokens"),
+        effective_limit,
     )
 
-    if status == "incomplete":
+    if status == "incomplete" or (reasoning_only and token_limit_reached):
         detail = reason or "unknown"
         raise BedrockIncompleteResponseError(
             f"Bedrock Mantle 응답이 완료되지 않았습니다. reason={detail}",
@@ -218,7 +236,9 @@ class BedrockGPT:
             timeout=self.timeout_seconds,
         )
         response.raise_for_status()
-        return _extract_mantle_text(response.json()).strip()
+        return _extract_mantle_text(
+            response.json(), requested_max_tokens=max_tokens
+        ).strip()
 
     async def generate_async(
         self,
@@ -237,7 +257,9 @@ class BedrockGPT:
                 headers=_signed_headers(self.endpoint, body, self.region),
             )
         response.raise_for_status()
-        return _extract_mantle_text(response.json()).strip()
+        return _extract_mantle_text(
+            response.json(), requested_max_tokens=max_tokens
+        ).strip()
 
 
 @dataclass

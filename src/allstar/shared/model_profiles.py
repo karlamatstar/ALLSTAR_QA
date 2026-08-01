@@ -32,7 +32,7 @@ def _models() -> dict[str, ModelSpec]:
         "openai_generation": ModelSpec(
             "openai",
             os.getenv("VOC_OPENAI_GENERATION_MODEL", "openai.gpt-oss-20b"),
-            os.getenv("VOC_OPENAI_GENERATION_REASONING", "none"),
+            os.getenv("VOC_OPENAI_GENERATION_REASONING", "low"),
         ),
         "openai_judge": ModelSpec(
             "openai",

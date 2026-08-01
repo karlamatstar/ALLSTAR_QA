@@ -23,7 +23,7 @@ class OpenAIChat:
     ):
         self.model = model or os.environ.get("OPENAI_MODEL", "openai.gpt-oss-20b")
         self.max_attempts = max_attempts or int(os.environ.get("LLM_MAX_ATTEMPTS", "3"))
-        self.reasoning_effort = reasoning_effort or os.environ.get("OPENAI_REASONING_EFFORT", "none")
+        self.reasoning_effort = reasoning_effort or os.environ.get("OPENAI_REASONING_EFFORT", "low")
         self.verbosity = verbosity or os.environ.get("OPENAI_VERBOSITY", "low")
         self.client = BedrockGPT(
             model=self.model,
