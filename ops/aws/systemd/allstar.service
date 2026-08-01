@@ -1,0 +1,18 @@
+[Unit]
+Description=AllStar AWS Docker Compose
+Requires=docker.service
+Requires=allstar-duckdns-update.service
+After=network-online.target docker.service allstar-duckdns-update.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/opt/allstar
+ExecStart=/opt/allstar/ops/aws/scripts/allstar-start.sh
+ExecStop=/opt/allstar/ops/aws/scripts/allstar-stop.sh
+TimeoutStartSec=900
+TimeoutStopSec=900
+
+[Install]
+WantedBy=multi-user.target

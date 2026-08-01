@@ -1,0 +1,120 @@
+name: ${ALLSTAR_COMPOSE_PROJECT:-allstar}
+
+services:
+  portfolio-api:
+    ports: !reset []
+    volumes:
+      - ${ALLSTAR_DATA_ROOT:-/opt/allstar-data}/output:/srv/app/_OUTPUT
+    networks: [backend, monitoring]
+
+  k6-runner:
+    ports: !reset []
+    volumes:
+      - ${ALLSTAR_DATA_ROOT:-/opt/allstar-data}/output:/srv/app/_OUTPUT
+      - ./src/allstar/ai_agent/evaluation/test_cases.json:/srv/app/src/allstar/ai_agent/evaluation/test_cases.json
+      - ./src/allstar/voc/evaluation/test_cases.json:/srv/app/src/allstar/voc/evaluation/test_cases.json
+    networks: [backend, monitoring]
+
+  service-control:
+    environment:
+      ALLSTAR_COMPOSE_PROJECT: ${ALLSTAR_COMPOSE_PROJECT:-allstar}
+      SERVICE_CONTROL_TOKEN: ${SERVICE_CONTROL_TOKEN:?SERVICE_CONTROL_TOKEN is required}
+    volumes:
+      - ${ALLSTAR_DATA_ROOT:-/opt/allstar-data}/output:/srv/app/_OUTPUT
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks: [backend]
+    security_opt:
+      - no-new-privileges:true
+
+  streamlit:
+    ports: !reset []
+    environment:
+      GRAFANA_URL: ${ALLSTAR_PUBLIC_URL:?ALLSTAR_PUBLIC_URL is required}/grafana/
+      SERVICE_CONTROL_TOKEN: ${SERVICE_CONTROL_TOKEN:?SERVICE_CONTROL_TOKEN is required}
+    volumes:
+      - ${ALLSTAR_DATA_ROOT:-/opt/allstar-data}/output:/srv/app/_OUTPUT
+      - ./src/allstar/ai_agent/evaluation/test_cases.json:/srv/app/src/allstar/ai_agent/evaluation/test_cases.json
+      - ./src/allstar/voc/evaluation/test_cases.json:/srv/app/src/allstar/voc/evaluation/test_cases.json
+    networks: [frontend, backend, monitoring]
+
+  voc-api:
+    ports: !reset []
+    volumes:
+      - ${ALLSTAR_DATA_ROOT:-/opt/allstar-data}/output:/srv/app/_OUTPUT
+    networks: [backend, monitoring]
+
+  voc-interpreter:
+    ports: !reset []
+    networks: [backend]
+
+  voc-retriever:
+    ports: !reset []
+    networks: [backend]
+
+  voc-summarizer:
+    ports: !reset []
+    volumes:
+      - ${ALLSTAR_DATA_ROOT:-/opt/allstar-data}/output:/srv/app/_OUTPUT
+    networks: [backend]
+
+  voc-evaluator:
+    ports: !reset []
+    networks: [backend]
+
+  voc-critic:
+    ports: !reset []
+    networks: [backend]
+
+  voc-improver:
+    ports: !reset []
+    networks: [backend]
+
+  prometheus:
+    image: prom/prometheus:v3.10.0
+    ports: !reset []
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=${PROMETHEUS_RETENTION:-30d}
+      - --web.enable-admin-api
+      - --web.enable-remote-write-receiver
+    volumes:
+      - ./ops/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ${ALLSTAR_DATA_ROOT:-/opt/allstar-data}/prometheus:/prometheus
+    networks: [monitoring]
+
+  grafana:
+    image: grafana/grafana:13.1.0
+    ports: !reset []
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?GRAFANA_ADMIN_PASSWORD is required}
+      GF_SERVER_DOMAIN: ${ALLSTAR_DOMAIN:?ALLSTAR_DOMAIN is required}
+      GF_SERVER_ROOT_URL: ${ALLSTAR_PUBLIC_URL:?ALLSTAR_PUBLIC_URL is required}/grafana/
+      GF_SERVER_SERVE_FROM_SUB_PATH: "true"
+    volumes:
+      - ./ops/monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ${ALLSTAR_DATA_ROOT:-/opt/allstar-data}/grafana:/var/lib/grafana
+    networks: [frontend, monitoring]
+
+  caddy:
+    image: caddy:2.11.4-alpine
+    environment:
+      ALLSTAR_SITE_ADDRESS: ${ALLSTAR_SITE_ADDRESS:?ALLSTAR_SITE_ADDRESS is required}
+    ports:
+      - ${ALLSTAR_HTTP_PORT:-80}:80
+      - ${ALLSTAR_HTTPS_PORT:-443}:443
+      - ${ALLSTAR_HTTPS_PORT:-443}:443/udp
+    volumes:
+      - ./ops/aws/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ${ALLSTAR_DATA_ROOT:-/opt/allstar-data}/caddy/data:/data
+      - ${ALLSTAR_DATA_ROOT:-/opt/allstar-data}/caddy/config:/config
+    depends_on:
+      - streamlit
+      - grafana
+    networks: [frontend]
+    restart: unless-stopped
+
+networks:
+  frontend:
+  backend:
+  monitoring:

@@ -1,0 +1,14 @@
+[Unit]
+Description=Sync AllStar logs and reports to S3
+After=network-online.target allstar.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/allstar/ops/aws/scripts/s3-sync.sh scheduled
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,31 @@
+{
+  "description": "시연 시간을 줄이기 위한 VOC Improve QA 현재 실행용 대표 테스트케이스 3건. 일반 분석, 오타 발화 이해, 데이터 없음 예외처리를 각각 한 건씩 유지한다.",
+  "archive": "archive/test_cases_10_2026-07-25.json",
+  "original_archive": "archive/test_cases_20_2026-07-17.json",
+  "reduction_rule": "2026-07-25 실행용 10건 중 성격이 겹치지 않는 TC-01, TC-04, TC-09를 대표 사례로 유지하며 기존 ID를 바꾸지 않는다.",
+  "cases": [
+    {
+      "case_id": "TC-01", "archive_source_case_id": "TC-01", "category": "권장 VOC", "judge_enabled": true, "judge_mode": "live", "question": "모바일 앱 갱신 오류와 갱신 안내 문자가 늦게 도착하는 자동차 보험 사례의 원인과 재발 방지 방안을 정리해 주세요.",
+      "expected_intent": "모바일 앱 자동차 보험 갱신 오류의 원인과 재발 방지 방안 분석",
+      "expected_keywords": ["모바일 앱", "자동차 보험", "갱신", "오류"],
+      "required_output": ["관련 VOC 요약", "원인 추정", "개선안", "우선순위"],
+      "prohibited_output": ["결제 확정", "개인정보 요구", "고객 기기 문제로 단정"]
+    },
+    {
+      "case_id": "TC-04", "archive_source_case_id": "TC-07", "category": "오타 질문", "judge_enabled": true, "judge_mode": "live", "question": "보험금청구했는데 약관에없는항목이라고 거절됫어요",
+      "expected_intent": "오타가 포함된 보험금 청구 거절 문의",
+      "expected_keywords": ["보험금", "청구", "거절"],
+      "required_output": ["원인 추정", "고객 안내"],
+      "prohibited_output": ["질문 이해 불가", "지급 완료로 확정", "개인정보 요구"],
+      "note": "오타와 띄어쓰기 오류가 있는 고객 발화 이해 능력을 확인한다."
+    },
+    {
+      "case_id": "TC-09", "archive_source_case_id": "TC-17", "category": "데이터 없음", "judge_enabled": true, "judge_mode": "live", "expect_no_data": true, "question": "현재 VOC 데이터에서 게임 아이템 환불 관련 불만을 찾아 문제와 정책 개선안을 분석해 주세요.",
+      "expected_intent": "관련 VOC 데이터 없음",
+      "expected_keywords": [],
+      "required_output": ["관련 데이터 없음"],
+      "prohibited_output": ["존재하는 정책으로 안내"],
+      "note": "Retriever 0건이 기대 결과이며 PASS(예외처리)로 분류하고 평균 점수 계산에서는 제외한다."
+    }
+  ]
+}

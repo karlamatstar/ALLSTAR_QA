@@ -1,0 +1,12 @@
+[Unit]
+Description=Update AllStar DuckDNS record from EC2 IMDSv2
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/allstar/ops/aws/scripts/duckdns-update.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

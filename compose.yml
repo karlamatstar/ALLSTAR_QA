@@ -1,0 +1,218 @@
+x-voc-common: &voc-common
+  build:
+    context: .
+    dockerfile: ops/docker/Dockerfile.voc
+  restart: unless-stopped
+  environment: &voc-environment
+    AWS_REGION: ${AWS_REGION:-ap-northeast-2}
+    AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-ap-northeast-2}
+    BEDROCK_RUNTIME_REGION: ${BEDROCK_RUNTIME_REGION:-ap-northeast-2}
+    BEDROCK_MANTLE_REGION: ${BEDROCK_MANTLE_REGION:-us-west-2}
+    VOC_OPENAI_GENERATION_MODEL: ${VOC_OPENAI_GENERATION_MODEL:-openai.gpt-5.6-luna}
+    VOC_OPENAI_JUDGE_MODEL: ${VOC_OPENAI_JUDGE_MODEL:-openai.gpt-5.6-terra}
+    VOC_ANTHROPIC_GENERATION_MODEL: ${VOC_ANTHROPIC_GENERATION_MODEL:-global.anthropic.claude-sonnet-4-6}
+    VOC_ANTHROPIC_JUDGE_MODEL: ${VOC_ANTHROPIC_JUDGE_MODEL:-global.anthropic.claude-sonnet-5}
+    VOC_OPENAI_GENERATION_REASONING: ${VOC_OPENAI_GENERATION_REASONING:-none}
+    VOC_OPENAI_JUDGE_REASONING: ${VOC_OPENAI_JUDGE_REASONING:-low}
+    VOC_ANTHROPIC_GENERATION_EFFORT: ${VOC_ANTHROPIC_GENERATION_EFFORT:-low}
+    VOC_ANTHROPIC_JUDGE_EFFORT: ${VOC_ANTHROPIC_JUDGE_EFFORT:-low}
+    VOC_ANTHROPIC_THINKING: ${VOC_ANTHROPIC_THINKING:-disabled}
+    A2A_VOC_CSV: /srv/app/src/allstar/voc/data/voc.csv
+    ALLSTAR_OUTPUT_ROOT: /srv/app/_OUTPUT
+    INTERPRETER_ENDPOINT: voc-interpreter:6001
+    RETRIEVER_ENDPOINT: voc-retriever:6002
+    SUMMARIZER_ENDPOINT: voc-summarizer:6003
+    EVALUATOR_ENDPOINT: voc-evaluator:6004
+    CRITIC_ENDPOINT: voc-critic:6005
+    IMPROVER_ENDPOINT: voc-improver:6006
+    PYTHONUNBUFFERED: "1"
+    PYTHONIOENCODING: utf-8
+
+services:
+  portfolio-api:
+    build:
+      context: .
+      dockerfile: ops/docker/Dockerfile.ai_agent
+    ports:
+      - "8000:8000"
+    environment:
+      AWS_REGION: ${AWS_REGION:-ap-northeast-2}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-ap-northeast-2}
+      BEDROCK_RUNTIME_REGION: ${BEDROCK_RUNTIME_REGION:-ap-northeast-2}
+      BEDROCK_MANTLE_REGION: ${BEDROCK_MANTLE_REGION:-us-west-2}
+      AI_CHAT_MODEL: ${AI_CHAT_MODEL:-openai.gpt-5.6-luna}
+      AI_JUDGE_MODEL: ${AI_JUDGE_MODEL:-openai.gpt-5.6-terra}
+      ALLSTAR_OUTPUT_ROOT: /srv/app/_OUTPUT
+    volumes:
+      - ./_OUTPUT:/srv/app/_OUTPUT
+    restart: unless-stopped
+
+  k6-runner:
+    build:
+      context: .
+      dockerfile: ops/docker/Dockerfile.k6_runner
+    ports:
+      - "127.0.0.1:8200:8200"
+    environment:
+      PORTFOLIO_API_URL: http://portfolio-api:8000
+      PROMETHEUS_URL: http://prometheus:9090
+      K6_PROMETHEUS_RW_SERVER_URL: http://prometheus:9090/api/v1/write
+      K6_PROMETHEUS_RW_TREND_STATS: p(95),p(99),avg,min,max
+      K6_RESULTS_DIR: /srv/app/_OUTPUT/logs/qa/k6
+      K6_EXECUTION_LOCATION: K6 전용 컨테이너
+      AI_CHAT_MODEL: ${AI_CHAT_MODEL:-openai.gpt-5.6-luna}
+      TZ: Asia/Seoul
+      ALLSTAR_PROJECT_ROOT: /srv/app
+      ALLSTAR_OUTPUT_ROOT: /srv/app/_OUTPUT
+    volumes:
+      - ./_OUTPUT:/srv/app/_OUTPUT
+      - ./src/allstar/ai_agent/evaluation/test_cases.json:/srv/app/src/allstar/ai_agent/evaluation/test_cases.json
+      - ./src/allstar/voc/evaluation/test_cases.json:/srv/app/src/allstar/voc/evaluation/test_cases.json
+    depends_on:
+      - portfolio-api
+      - prometheus
+    restart: unless-stopped
+
+  service-control:
+    build:
+      context: .
+      dockerfile: ops/docker/Dockerfile.service_control
+    environment:
+      ALLSTAR_PROJECT_ROOT: /srv/app
+      ALLSTAR_OUTPUT_ROOT: /srv/app/_OUTPUT
+      SERVICE_CONTROL_EVENT_LOG: /srv/app/_OUTPUT/logs/services/service_control_events.jsonl
+      SERVICE_CONTROL_TOKEN: ${SERVICE_CONTROL_TOKEN:-local-dev-service-control-token}
+      TZ: Asia/Seoul
+    volumes:
+      - ./_OUTPUT:/srv/app/_OUTPUT
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped
+
+  streamlit:
+    build:
+      context: .
+      dockerfile: ops/docker/Dockerfile.streamlit
+    ports:
+      - "8501:8501"
+    environment:
+      AWS_REGION: ${AWS_REGION:-ap-northeast-2}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-ap-northeast-2}
+      BEDROCK_RUNTIME_REGION: ${BEDROCK_RUNTIME_REGION:-ap-northeast-2}
+      BEDROCK_MANTLE_REGION: ${BEDROCK_MANTLE_REGION:-us-west-2}
+      DASHBOARD_TEST_TABS_PASSWORD: ${DASHBOARD_TEST_TABS_PASSWORD:-1234}
+      PORTFOLIO_API_URL: http://portfolio-api:8000
+      VOC_API_URL: http://voc-api:8100
+      PROMETHEUS_URL: http://prometheus:9090
+      GRAFANA_URL: ${DASHBOARD_PUBLIC_GRAFANA_URL:-http://localhost:3000}
+      GRAFANA_HEALTH_URL: http://grafana:3000
+      K6_RUNNER_URL: http://k6-runner:8200
+      SERVICE_CONTROL_URL: http://service-control:8300
+      SERVICE_CONTROL_TOKEN: ${SERVICE_CONTROL_TOKEN:-local-dev-service-control-token}
+      TZ: Asia/Seoul
+      INTERPRETER_HOST: voc-interpreter
+      RETRIEVER_HOST: voc-retriever
+      SUMMARIZER_HOST: voc-summarizer
+      EVALUATOR_HOST: voc-evaluator
+      CRITIC_HOST: voc-critic
+      IMPROVER_HOST: voc-improver
+      INTERPRETER_ENDPOINT: voc-interpreter:6001
+      RETRIEVER_ENDPOINT: voc-retriever:6002
+      SUMMARIZER_ENDPOINT: voc-summarizer:6003
+      EVALUATOR_ENDPOINT: voc-evaluator:6004
+      CRITIC_ENDPOINT: voc-critic:6005
+      IMPROVER_ENDPOINT: voc-improver:6006
+      ALLSTAR_PROJECT_ROOT: /srv/app
+      ALLSTAR_OUTPUT_ROOT: /srv/app/_OUTPUT
+      AI_TEST_CASES_PATH: /srv/app/src/allstar/ai_agent/evaluation/test_cases.json
+      VOC_TEST_CASES_PATH: /srv/app/src/allstar/voc/evaluation/test_cases.json
+      TEST_CASE_ARCHIVE_ROOT: /srv/app/_OUTPUT/archives/testcases
+    volumes:
+      - ./_OUTPUT:/srv/app/_OUTPUT
+      - ./src/allstar/ai_agent/evaluation/test_cases.json:/srv/app/src/allstar/ai_agent/evaluation/test_cases.json
+      - ./src/allstar/voc/evaluation/test_cases.json:/srv/app/src/allstar/voc/evaluation/test_cases.json
+    depends_on:
+      - portfolio-api
+      - voc-api
+      - prometheus
+      - grafana
+      - k6-runner
+      - service-control
+    restart: unless-stopped
+
+  voc-api:
+    <<: *voc-common
+    command: ["uvicorn", "allstar.voc.api.main:app", "--host", "0.0.0.0", "--port", "8100"]
+    ports:
+      - "8100:8100"
+    volumes:
+      - ./_OUTPUT:/srv/app/_OUTPUT
+    depends_on:
+      - voc-interpreter
+      - voc-retriever
+      - voc-summarizer
+      - voc-evaluator
+      - voc-critic
+      - voc-improver
+
+  voc-interpreter:
+    <<: *voc-common
+    command: ["python", "-u", "-m", "allstar.voc.agents.interpreter"]
+    ports: ["6001:6001"]
+
+  voc-retriever:
+    <<: *voc-common
+    command: ["python", "-u", "-m", "allstar.voc.agents.retriever"]
+    ports: ["6002:6002"]
+
+  voc-summarizer:
+    <<: *voc-common
+    command: ["python", "-u", "-m", "allstar.voc.agents.summarizer"]
+    ports: ["6003:6003"]
+    volumes:
+      - ./_OUTPUT:/srv/app/_OUTPUT
+
+  voc-evaluator:
+    <<: *voc-common
+    command: ["python", "-u", "-m", "allstar.voc.agents.evaluator"]
+    ports: ["6004:6004"]
+
+  voc-critic:
+    <<: *voc-common
+    command: ["python", "-u", "-m", "allstar.voc.agents.critic"]
+    ports: ["6005:6005"]
+
+  voc-improver:
+    <<: *voc-common
+    command: ["python", "-u", "-m", "allstar.voc.agents.improver"]
+    ports: ["6006:6006"]
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports: ["9090:9090"]
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --web.enable-remote-write-receiver
+    volumes:
+      - ./ops/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    depends_on: [portfolio-api, voc-api]
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    ports: ["3000:3000"]
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_SECURITY_ALLOW_EMBEDDING: "true"
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_USERS_DEFAULT_THEME: system
+      # 현재 대시보드는 기본 패널만 사용하므로 권한 없는 번들 플러그인 자동 갱신을 막는다.
+      GF_PLUGINS_PREINSTALL_DISABLED: "true"
+    volumes:
+      - ./ops/monitoring/grafana/provisioning:/etc/grafana/provisioning
+    depends_on: [prometheus]
+    restart: unless-stopped
+
+volumes:
+  prometheus_data:

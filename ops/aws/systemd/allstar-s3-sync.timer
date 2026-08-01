@@ -1,0 +1,11 @@
+[Unit]
+Description=Run AllStar S3 sync once per day
+
+[Timer]
+OnCalendar=daily
+Persistent=true
+RandomizedDelaySec=15m
+Unit=allstar-s3-sync.service
+
+[Install]
+WantedBy=timers.target

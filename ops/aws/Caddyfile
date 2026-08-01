@@ -1,0 +1,20 @@
+{$ALLSTAR_SITE_ADDRESS} {
+	encode zstd gzip
+
+	@mountedGrafana path /grafana
+	redir @mountedGrafana /grafana/ 308
+
+	handle /grafana/* {
+		reverse_proxy grafana:3000
+	}
+
+	handle {
+		reverse_proxy streamlit:8501
+	}
+
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+	}
+}
