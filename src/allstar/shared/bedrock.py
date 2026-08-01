@@ -9,6 +9,7 @@ EC2 인스턴스 프로필을 포함한 boto3 기본 자격 증명 체인을 사
 from __future__ import annotations
 
 import json
+import logging
 import os
 from dataclasses import dataclass
 from typing import Any
@@ -24,6 +25,7 @@ from botocore.config import Config
 DEFAULT_MANTLE_REGION = "us-west-2"
 DEFAULT_RUNTIME_REGION = "ap-northeast-2"
 MANTLE_SERVICE = "bedrock-mantle"
+logger = logging.getLogger(__name__)
 
 
 class BedrockConfigurationError(RuntimeError):
@@ -32,6 +34,21 @@ class BedrockConfigurationError(RuntimeError):
 
 class BedrockResponseError(RuntimeError):
     """Bedrock 응답에서 텍스트를 찾지 못했을 때 발생한다."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        status: str | None = None,
+        reason: str | None = None,
+    ) -> None:
+        self.status = status
+        self.reason = reason
+        super().__init__(message)
+
+
+class BedrockIncompleteResponseError(BedrockResponseError):
+    """Responses API가 완료되지 않은 상태로 종료되었을 때 발생한다."""
 
 
 def mantle_region() -> str:
@@ -99,7 +116,55 @@ def _extract_mantle_text(payload: dict[str, Any]) -> str:
                 parts.append(text)
     if parts:
         return "\n".join(parts)
-    raise BedrockResponseError("Bedrock Mantle 응답에서 출력 텍스트를 찾지 못했습니다.")
+
+    status = str(payload.get("status") or "unknown")
+    incomplete_details = payload.get("incomplete_details")
+    reason = None
+    if isinstance(incomplete_details, dict):
+        reason_value = incomplete_details.get("reason")
+        if reason_value:
+            reason = str(reason_value)
+
+    output_types: list[str] = []
+    content_types: list[str] = []
+    for output in payload.get("output", []):
+        if not isinstance(output, dict):
+            continue
+        output_types.append(str(output.get("type") or "unknown"))
+        for content in output.get("content", []):
+            if isinstance(content, dict):
+                content_types.append(str(content.get("type") or "unknown"))
+
+    usage = payload.get("usage") if isinstance(payload.get("usage"), dict) else {}
+    output_details = (
+        usage.get("output_tokens_details")
+        if isinstance(usage.get("output_tokens_details"), dict)
+        else {}
+    )
+    logger.warning(
+        "Bedrock Mantle 텍스트 출력 없음: status=%s reason=%s "
+        "output_types=%s content_types=%s input_tokens=%s output_tokens=%s reasoning_tokens=%s",
+        status,
+        reason or "none",
+        output_types,
+        content_types,
+        usage.get("input_tokens"),
+        usage.get("output_tokens"),
+        output_details.get("reasoning_tokens"),
+    )
+
+    if status == "incomplete":
+        detail = reason or "unknown"
+        raise BedrockIncompleteResponseError(
+            f"Bedrock Mantle 응답이 완료되지 않았습니다. reason={detail}",
+            status=status,
+            reason=reason,
+        )
+    raise BedrockResponseError(
+        f"Bedrock Mantle 응답에서 출력 텍스트를 찾지 못했습니다. status={status}",
+        status=status,
+        reason=reason,
+    )
 
 
 @dataclass

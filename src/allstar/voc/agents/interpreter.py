@@ -118,7 +118,7 @@ class NLInterpreterAgent:
         # responses.create는 최신 OpenAI API 방식입니다
         text = await make_generation_chat("openai", execution=execution)(
             prompt,
-            max_tokens=int(os.environ.get("INTERPRETER_MAX_OUTPUT_TOKENS", "300")),
+            max_tokens=int(os.environ.get("INTERPRETER_MAX_OUTPUT_TOKENS", "900")),
         )
 
         # ============ JSON 추출 ============

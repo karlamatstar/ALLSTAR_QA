@@ -21,6 +21,20 @@ def test_chat_rejects_question_mark_only_encoding_damage():
     assert "질문 문자가 손상" in response.text
 
 
+def test_public_chat_error_hides_grpc_and_bedrock_internals():
+    internal = RuntimeError(
+        "<AioRpcError: Interpreter error: Bedrock Mantle 응답이 완료되지 않았습니다. "
+        "reason=max_output_tokens>"
+    )
+
+    message = main._public_chat_error(internal)
+
+    assert "출력 한도" in message
+    assert "자동 확대 재시도" in message
+    assert "AioRpcError" not in message
+    assert "Bedrock Mantle" not in message
+
+
 def test_chat_job_records_selected_profile_without_real_api(monkeypatch, tmp_path):
     generated = []
 

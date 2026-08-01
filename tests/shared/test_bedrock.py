@@ -1,6 +1,8 @@
 import io
 import json
 
+import pytest
+
 from allstar.shared import bedrock
 
 
@@ -53,6 +55,38 @@ def test_gpt_uses_signed_mantle_responses_endpoint(monkeypatch):
 def test_gpt_5_models_use_their_dedicated_openai_path():
     client = bedrock.BedrockGPT("openai.gpt-5.6-luna", region="us-west-2")
     assert client.endpoint == "https://bedrock-mantle.us-west-2.api.aws/openai/v1/responses"
+
+
+def test_mantle_incomplete_response_preserves_safe_diagnostics(caplog):
+    payload = {
+        "status": "incomplete",
+        "incomplete_details": {"reason": "max_output_tokens"},
+        "input": "로그에 남으면 안 되는 사용자 질문",
+        "output": [{"type": "reasoning", "content": []}],
+        "usage": {
+            "input_tokens": 120,
+            "output_tokens": 900,
+            "output_tokens_details": {"reasoning_tokens": 900},
+        },
+    }
+
+    with pytest.raises(bedrock.BedrockIncompleteResponseError) as caught:
+        bedrock._extract_mantle_text(payload)
+
+    assert caught.value.status == "incomplete"
+    assert caught.value.reason == "max_output_tokens"
+    assert "status=incomplete" in caplog.text
+    assert "reason=max_output_tokens" in caplog.text
+    assert "사용자 질문" not in caplog.text
+
+
+def test_mantle_completed_response_without_text_reports_status():
+    with pytest.raises(bedrock.BedrockResponseError) as caught:
+        bedrock._extract_mantle_text({"status": "completed", "output": []})
+
+    assert not isinstance(caught.value, bedrock.BedrockIncompleteResponseError)
+    assert caught.value.status == "completed"
+    assert caught.value.reason is None
 
 
 def test_claude_uses_seoul_runtime_and_global_model(monkeypatch):

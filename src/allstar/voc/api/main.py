@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import os
 import socket
 import time
@@ -40,6 +41,7 @@ from allstar.voc.evaluation.progress import (
 
 
 load_dotenv()
+logger = logging.getLogger(__name__)
 app = FastAPI(title="VOC HTTP Gateway", version="0.1.0")
 app.mount("/metrics", metrics_app)
 log_store.maintain_live_logs()
@@ -78,6 +80,22 @@ def _record_chat_metrics(profile_id: str, status: str, elapsed_seconds: float) -
     voc_chat_total.labels(status=status, profile=profile_id).inc()
     voc_chat_latency.labels(profile=profile_id).observe(elapsed_seconds)
     voc_chat_last_activity.labels(profile=profile_id).set_to_current_time()
+
+
+def _public_chat_error(error: Exception) -> str:
+    """내부 예외 구조를 숨기고 사용자가 조치할 수 있는 안내만 반환한다."""
+    detail = str(error)
+    lowered = detail.lower()
+    if "max_output_tokens" in lowered or "max_tokens" in lowered:
+        return (
+            "AI 모델이 출력 한도 안에서 답변 생성을 완료하지 못했습니다. "
+            "자동 확대 재시도 후에도 완료되지 않았으므로 잠시 후 다시 시도해 주세요."
+        )
+    if "bedrock mantle" in lowered and (
+        "출력 텍스트" in detail or "응답이 완료되지" in detail
+    ):
+        return "AI 모델 응답을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요."
+    return detail
 
 
 async def _execute(request_id: str, request: ChatRequest) -> None:
@@ -183,15 +201,17 @@ async def _execute(request_id: str, request: ChatRequest) -> None:
         finish_progress(request_id, "completed")
     except Exception as error:
         elapsed = round(time.perf_counter() - started, 3)
-        fail_active_stage(request_id, LIVE_CASE_ID, str(error))
-        finish_progress(request_id, "failed", str(error))
+        public_error = _public_chat_error(error)
+        logger.exception("VOC 요청 처리 실패: request_id=%s", request_id)
+        fail_active_stage(request_id, LIVE_CASE_ID, public_error)
+        finish_progress(request_id, "failed", public_error)
         async with _jobs_lock:
             _jobs[request_id].update({
                 "status": "failed",
                 "current_stage": "실패",
                 "finished_at": _now(),
                 "elapsed_seconds": elapsed,
-                "error": str(error),
+                "error": public_error,
             })
         _record_chat_metrics(profile.profile_id, "error", elapsed)
     finally:
