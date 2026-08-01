@@ -22,3 +22,12 @@ def test_comparison_charts_use_distinct_color_families_and_line_styles():
     for dash in ('"solid"', '"dash"', '"dot"', '"dashdot"'):
         assert dash in source
     assert 'MODEL_COLORS = ("#0072B2", "#E69F00")' in report_source
+
+
+def test_ai_batch_run_scrolls_to_progress_area_once_after_launch():
+    source = (ROOT / "src/allstar/ui/dashboard/views.py").read_text(encoding="utf-8")
+
+    assert "def _scroll_to_process_bottom_once" in source
+    assert "scroller.scrollHeight" in source
+    assert "st.session_state.ai_batch_process_scroll_to_run_id = run_id" in source
+    assert '_scroll_to_process_bottom_once(state_key, state["run_id"])' in source

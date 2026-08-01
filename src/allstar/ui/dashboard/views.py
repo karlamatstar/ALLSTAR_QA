@@ -613,6 +613,37 @@ def _enable_management_expander_scroll(*expander_keys: str) -> None:
     )
 
 
+def _scroll_to_process_bottom_once(state_key: str, run_id: str) -> None:
+    """프로세스 실행 직후 진행 상태와 로그가 있는 화면 하단으로 한 번 이동한다."""
+    safe_state_key = re.sub(r"[^a-zA-Z0-9_-]", "_", state_key)
+    safe_run_id = re.sub(r"[^a-zA-Z0-9_-]", "_", run_id)
+    anchor_id = f"process-run-bottom-{safe_state_key}-{safe_run_id}"
+    st.markdown(f"<div id='{anchor_id}'></div>", unsafe_allow_html=True)
+    components.html(
+        f"""
+        <script>
+        (() => {{
+            const move = (behavior) => {{
+                const parentDocument = window.parent.document;
+                const target = parentDocument.getElementById({json.dumps(anchor_id)});
+                if (!target) return;
+                const scroller = target.closest('[data-testid="stMain"]') || parentDocument.scrollingElement;
+                if (scroller && typeof scroller.scrollTo === "function") {{
+                    scroller.scrollTo({{top: scroller.scrollHeight, behavior}});
+                }} else {{
+                    target.scrollIntoView({{behavior, block: "end"}});
+                }}
+            }};
+            window.requestAnimationFrame(() => move("smooth"));
+            window.setTimeout(() => move("smooth"), 300);
+            window.setTimeout(() => move("auto"), 750);
+        }})();
+        </script>
+        """,
+        height=0,
+    )
+
+
 def _render_process(state_key: str, label: str) -> tuple[bool, str]:
     state = st.session_state.get(state_key)
     if not state:
@@ -634,6 +665,10 @@ def _render_process(state_key: str, label: str) -> tuple[bool, str]:
                 key=f"{state_key}_terminal_{state.get('run_id', 'current')}",
                 empty_text="준비 중...",
             )
+        scroll_state_key = f"{state_key}_scroll_to_run_id"
+        if st.session_state.get(scroll_state_key) == state.get("run_id"):
+            _scroll_to_process_bottom_once(state_key, state["run_id"])
+            st.session_state.pop(scroll_state_key, None)
         time.sleep(1)
         st.rerun()
     else:
@@ -649,6 +684,7 @@ def _render_process(state_key: str, label: str) -> tuple[bool, str]:
             )
         if st.button("완료 상태 닫기 · 다음 테스트 준비", key=f"clear_{state_key}", type="primary"):
             st.session_state.pop(state_key, None)
+            st.session_state.pop(f"{state_key}_scroll_to_run_id", None)
             _read_csv.clear()
             st.rerun()
     return return_code is None, output
@@ -2595,7 +2631,7 @@ def _render_ai_case_execution() -> None:
         "비밀번호가 확인되어야 전체 AI 에이전트 테스트케이스를 실행할 수 있습니다.",
     )
     if st.button("전체 테스트케이스 실행", type="primary", disabled=not cases or not password_confirmed or running):
-        _launch_process(
+        run_id = _launch_process(
             "ai_batch_process",
             [
                 sys.executable,
@@ -2607,6 +2643,7 @@ def _render_ai_case_execution() -> None:
             ],
             "dashboard_ai_batch",
         )
+        st.session_state.ai_batch_process_scroll_to_run_id = run_id
         st.rerun()
     _render_process("ai_batch_process", "AI 에이전트 전체 테스트케이스")
 
